@@ -5,6 +5,8 @@ import type {
   VehicleDashboard,
   VehicleListParams,
   VehiclePayload,
+  VehicleUsage,
+  VehicleUsagePayload,
 } from "../types/vehicle";
 
 export const vehicleApi = {
@@ -42,5 +44,29 @@ export const vehicleApi = {
 
   async remove(id: string) {
     await apiClient.delete(`/vehicles/${id}`);
+  },
+
+  async listUsages(id: string, page = 1, limit = 20) {
+    const response = await apiClient.get<PaginatedResponse<VehicleUsage>>(
+      `/vehicles/${id}/usages`,
+      { params: { page, limit } },
+    );
+    return response.data;
+  },
+
+  async createUsage(id: string, payload: VehicleUsagePayload) {
+    const response = await apiClient.post<
+      ApiResponse<{ usage: VehicleUsage; currentMileage: number }>
+    >(`/vehicles/${id}/usages`, payload);
+    return response.data.data;
+  },
+
+  async removeUsage(vehicleId: string, usageId: string, confirmation: string) {
+    const response = await apiClient.delete<
+      ApiResponse<{ currentMileage: number }>
+    >(`/vehicles/${vehicleId}/usages/${usageId}`, {
+      data: { confirmation },
+    });
+    return response.data.data;
   },
 };

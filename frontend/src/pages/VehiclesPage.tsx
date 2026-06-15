@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { DeleteVehicleModal } from "../modules/vehicles/components/DeleteVehicleModal";
@@ -18,6 +19,7 @@ import {
 import { useAuth } from "../modules/auth/context/AuthContext";
 
 export function VehiclesPage() {
+  const navigate = useNavigate();
   const { activeMembership } = useAuth();
   const canManage = activeMembership?.role === "ADMIN";
   const [search, setSearch] = useState("");
@@ -128,6 +130,7 @@ export function VehiclesPage() {
           loading={vehicleList.loading}
           onEdit={setFormVehicle}
           onDelete={setDeleteVehicle}
+          onView={(vehicle) => navigate(`/vehicles/${vehicle.id}`)}
           canManage={canManage}
         />
 

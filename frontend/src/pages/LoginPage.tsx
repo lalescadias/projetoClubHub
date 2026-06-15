@@ -70,7 +70,7 @@ export function LoginPage() {
                 <input
                   className="min-w-0 flex-1 border-0 bg-transparent text-sm lowercase outline-none"
                   autoComplete="organization"
-                  placeholder="atletico-clube"
+                  placeholder="sporting-covilha"
                   {...register("club")}
                 />
               </div>

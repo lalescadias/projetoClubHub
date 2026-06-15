@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "../../../components/EmptyState";
 import { LoadingState } from "../../../components/LoadingState";
 import { vehicleTypeLabels } from "../constants/vehicle-options";
@@ -10,6 +10,7 @@ type VehicleTableProps = {
   loading: boolean;
   onEdit: (vehicle: Vehicle) => void;
   onDelete: (vehicle: Vehicle) => void;
+  onView: (vehicle: Vehicle) => void;
   canManage: boolean;
 };
 
@@ -20,6 +21,7 @@ export function VehicleTable({
   loading,
   onEdit,
   onDelete,
+  onView,
   canManage,
 }: VehicleTableProps) {
   if (loading) {
@@ -87,12 +89,12 @@ export function VehicleTable({
                 {vehicle.year}
               </td>
               <td data-label="Quilometragem" className="h-[69px] whitespace-nowrap px-[15px] text-[11px] text-[#5f6d65] max-md:flex max-md:h-auto max-md:items-center max-md:justify-between max-md:p-[5px_0] before:max-md:content-[attr(data-label)] before:max-md:text-[9px] before:max-md:font-bold before:max-md:uppercase before:max-md:text-[#939d96]">
-                {numberFormatter.format(vehicle.mileage)} km
+                {numberFormatter.format(vehicle.currentMileage)} km
               </td>
               <td data-label="Estado" className="h-[69px] whitespace-nowrap px-[15px] text-[11px] text-[#5f6d65] max-md:flex max-md:h-auto max-md:items-center max-md:justify-between max-md:p-[5px_0] before:max-md:content-[attr(data-label)] before:max-md:text-[9px] before:max-md:font-bold before:max-md:uppercase before:max-md:text-[#939d96]">
                 <StatusBadge status={vehicle.status} />
               </td>
-              <td className={`w-[52px] px-[15px] text-right max-md:absolute max-md:right-3 max-md:top-3.5 max-md:w-auto max-md:p-0 ${canManage ? "" : "hidden"}`}>
+              <td className="w-[52px] px-[15px] text-right max-md:absolute max-md:right-3 max-md:top-3.5 max-md:w-auto max-md:p-0">
                 <details className="relative inline-block">
                   <summary
                     className="grid h-[31px] w-[31px] list-none place-items-center rounded-[7px] hover:bg-[#f0f3f0] open:bg-[#f0f3f0]"
@@ -101,6 +103,15 @@ export function VehicleTable({
                     <MoreHorizontal size={20} />
                   </summary>
                   <div className="absolute right-0 top-[35px] z-10 min-w-[135px] rounded-lg border border-[#dde4de] bg-white p-[5px] shadow-[0_10px_35px_rgba(25,52,40,0.12)]">
+                    <button
+                      className="flex w-full items-center gap-2 rounded-md border-0 bg-transparent p-2 text-[11px] text-[#435148] hover:bg-[#f4f6f4]"
+                      type="button"
+                      onClick={() => onView(vehicle)}
+                    >
+                      <Eye size={16} /> Ver detalhe
+                    </button>
+                    {canManage && (
+                      <>
                     <button
                       className="flex w-full items-center gap-2 rounded-md border-0 bg-transparent p-2 text-[11px] text-[#435148] hover:bg-[#f4f6f4]"
                       type="button"
@@ -115,6 +126,8 @@ export function VehicleTable({
                     >
                       <Trash2 size={16} /> Remover
                     </button>
+                      </>
+                    )}
                   </div>
                 </details>
               </td>

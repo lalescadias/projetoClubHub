@@ -21,6 +21,15 @@ enum VehicleStatus {
   UNAVAILABLE
 }
 
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+  LPG
+  OTHER
+}
+
 enum ClubRole {
   ADMIN
   MEMBER
@@ -67,8 +76,10 @@ model Vehicle {
   plate           String        @db.VarChar(20)
   make            String        @db.VarChar(80)
   model           String        @db.VarChar(80)
+  version         String?       @db.VarChar(100)
   year            Int
-  mileage         Int           @default(0)
+  currentMileage  Int           @default(0)
+  fuelType        FuelType      @default(OTHER)
   type            VehicleType
   status          VehicleStatus @default(ACTIVE)
   inspectionDate  DateTime?     @db.Date
@@ -76,10 +87,28 @@ model Vehicle {
   notes           String?       @db.Text
   clubId          String
   club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  usages          VehicleUsage[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   @@unique([clubId, plate])
   @@index([clubId, status])
   @@index([clubId, make, model])
+}
+
+model VehicleUsage {
+  id             String   @id @default(uuid())
+  vehicleId      String
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  usedBy         String   @db.VarChar(120)
+  destination    String   @db.VarChar(180)
+  usageDate      DateTime @db.Date
+  startMileage   Int
+  endMileage     Int
+  fuelAmount     Decimal? @db.Decimal(10, 2)
+  fuelCost       Decimal? @db.Decimal(10, 2)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([vehicleId, usageDate])
 }

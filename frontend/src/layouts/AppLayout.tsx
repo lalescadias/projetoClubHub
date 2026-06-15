@@ -10,14 +10,17 @@ import {
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Brand } from "../components/Brand";
 import { useAuth } from "../modules/auth/context/AuthContext";
+import { useNotifications } from "../modules/notifications/hooks/useNotifications";
 
 const baseNavigation = [
   { label: "Visão geral", to: "/", icon: LayoutDashboard, end: true },
   { label: "Viaturas", to: "/vehicles", icon: BusFront },
+  { label: "Notificações", to: "/notifications", icon: Bell },
 ];
 
 export function AppLayout() {
   const { user, activeMembership, logout } = useAuth();
+  const { notifications } = useNotifications();
   const navigate = useNavigate();
   const navigation = [
     ...baseNavigation,
@@ -96,9 +99,14 @@ export function AppLayout() {
               className="relative grid h-[37px] w-[37px] place-items-center rounded-[9px] border border-[#dde4de] bg-white text-[#536159] hover:border-[#c4d0c7] hover:bg-[#f7f9f7] hover:text-club-800"
               type="button"
               aria-label="Notificações"
+              onClick={() => navigate("/notifications")}
             >
               <Bell size={19} />
-              <span className="absolute right-2 top-[7px] h-1.5 w-1.5 rounded-full border-[1.5px] border-white bg-[#dc6b5c]" />
+              {notifications.length > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-white bg-[#c95656] px-1 text-[8px] font-bold text-white">
+                  {notifications.length > 9 ? "9+" : notifications.length}
+                </span>
+              )}
             </button>
             <button
               className="grid h-[37px] w-[37px] place-items-center rounded-[9px] border border-[#dde4de] bg-white text-[#536159] hover:border-[#c4d0c7] hover:bg-[#f7f9f7] hover:text-club-800 max-md:hidden"

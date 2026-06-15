@@ -1,8 +1,10 @@
 import type { RequestHandler } from "express";
 import type {
+  CreateVehicleUsageInput,
   CreateVehicleInput,
   UpdateVehicleInput,
   VehicleFilters,
+  VehicleUsageFilters,
 } from "./vehicle.types.js";
 import { vehicleService } from "./vehicle.service.js";
 
@@ -48,6 +50,33 @@ export class VehicleController {
   dashboard: RequestHandler = async (_request, response) => {
     const dashboard = await vehicleService.getDashboard(_request.auth!.clubId!);
     response.json({ data: dashboard });
+  };
+
+  listUsages: RequestHandler = async (request, response) => {
+    const result = await vehicleService.listUsages(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.query as unknown as VehicleUsageFilters,
+    );
+    response.json(result);
+  };
+
+  createUsage: RequestHandler = async (request, response) => {
+    const result = await vehicleService.createUsage(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.body as CreateVehicleUsageInput,
+    );
+    response.status(201).json({ data: result });
+  };
+
+  removeUsage: RequestHandler = async (request, response) => {
+    const result = await vehicleService.removeUsage(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.params.usageId as string,
+    );
+    response.json({ data: result });
   };
 }
 

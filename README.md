@@ -177,8 +177,10 @@ npm run dev:frontend
 | `plate` | String | Matrícula única |
 | `make` | String | Marca |
 | `model` | String | Modelo |
+| `version` | String | Versão ou variante |
 | `year` | Integer | Ano da viatura |
-| `mileage` | Integer | Quilometragem |
+| `currentMileage` | Integer | Quilometragem atual |
+| `fuelType` | Enum | Tipo de combustível |
 | `type` | Enum | `CAR`, `VAN`, `BUS`, `MOTORCYCLE`, `OTHER` |
 | `status` | Enum | `ACTIVE`, `MAINTENANCE`, `UNAVAILABLE` |
 | `inspectionDate` | Date | Data de validade da inspeção |
@@ -197,12 +199,16 @@ Base URL: `http://localhost:3333/api`
 | `POST` | `/auth/login` | Inicia sessão |
 | `GET` | `/auth/me` | Sessão e clubes do utilizador |
 | `PATCH` | `/auth/password` | Altera a palavra-passe |
+| `GET` | `/notifications` | Gera alertas dinâmicos de inspeção e seguro |
 | `GET` | `/vehicles` | Lista paginada de viaturas |
 | `GET` | `/vehicles/dashboard` | Totais por estado |
 | `GET` | `/vehicles/:id` | Detalhe de uma viatura |
 | `POST` | `/vehicles` | Cria uma viatura |
 | `PATCH` | `/vehicles/:id` | Edita uma viatura |
 | `DELETE` | `/vehicles/:id` | Remove uma viatura |
+| `GET` | `/vehicles/:id/usages` | Histórico paginado de utilizações |
+| `POST` | `/vehicles/:id/usages` | Regista utilização e atualiza quilometragem |
+| `DELETE` | `/vehicles/:id/usages/:usageId` | Apaga a última utilização e repõe quilometragem |
 | `GET` | `/users` | Lista utilizadores do clube, apenas admin |
 | `POST` | `/users` | Adiciona utilizador ao clube, apenas admin |
 | `PATCH` | `/users/:membershipId` | Altera função ou estado, apenas admin |
@@ -230,8 +236,10 @@ Exemplo de criação:
   "plate": "AA-01-CH",
   "make": "Mercedes-Benz",
   "model": "Sprinter",
+  "version": "Tourer",
   "year": 2022,
-  "mileage": 48320,
+  "currentMileage": 48320,
+  "fuelType": "DIESEL",
   "type": "VAN",
   "status": "ACTIVE",
   "inspectionDate": "2026-11-12",
@@ -239,6 +247,29 @@ Exemplo de criação:
   "notes": "Carrinha principal da equipa sénior."
 }
 ```
+
+Exemplo de utilização:
+
+```json
+{
+  "usedBy": "João Silva",
+  "destination": "Estádio Municipal",
+  "usageDate": "2026-06-15",
+  "startMileage": 120000,
+  "endMileage": 120180,
+  "fuelAmount": 20.5,
+  "fuelCost": 34.9,
+  "notes": "Deslocação da equipa sénior."
+}
+```
+
+O registo é transacional: a quilometragem inicial tem de coincidir com a
+quilometragem atual, a final não pode ser inferior e a viatura não pode estar
+indisponível. Após a criação, `currentMileage` é atualizada automaticamente.
+
+A eliminação exige corpo `{ "confirmation": "delete" }` e só é permitida para a
+utilização mais recente. A quilometragem atual é restaurada para `startMileage`
+na mesma transação.
 
 ## Scripts úteis
 

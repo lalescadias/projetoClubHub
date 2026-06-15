@@ -5,10 +5,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { getErrorMessage } from "../../../services/error.service";
 import {
+  fuelTypeLabels,
   vehicleStatusLabels,
   vehicleTypeLabels,
 } from "../constants/vehicle-options";
 import {
+  fuelTypes,
   vehicleStatuses,
   vehicleTypes,
   type Vehicle,
@@ -20,8 +22,10 @@ const formSchema = z.object({
   plate: z.string().trim().min(5, "Indique uma matrícula válida.").max(20),
   make: z.string().trim().min(2, "Indique a marca.").max(80),
   model: z.string().trim().min(1, "Indique o modelo.").max(80),
+  version: z.string().trim().max(100),
   year: z.number().int().min(1950).max(currentYear + 1),
-  mileage: z.number().int().min(0, "A quilometragem não pode ser negativa."),
+  currentMileage: z.number().int().min(0, "A quilometragem não pode ser negativa."),
+  fuelType: z.enum(fuelTypes),
   type: z.enum(vehicleTypes),
   status: z.enum(vehicleStatuses),
   inspectionDate: z.string(),
@@ -64,8 +68,10 @@ export function VehicleFormModal({
       plate: "",
       make: "",
       model: "",
+      version: "",
       year: currentYear,
-      mileage: 0,
+      currentMileage: 0,
+      fuelType: "DIESEL",
       type: "VAN",
       status: "ACTIVE",
       inspectionDate: "",
@@ -80,8 +86,10 @@ export function VehicleFormModal({
         plate: vehicle.plate,
         make: vehicle.make,
         model: vehicle.model,
+        version: vehicle.version ?? "",
         year: vehicle.year,
-        mileage: vehicle.mileage,
+        currentMileage: vehicle.currentMileage,
+        fuelType: vehicle.fuelType,
         type: vehicle.type,
         status: vehicle.status,
         inspectionDate: dateInputValue(vehicle.inspectionDate),
@@ -105,6 +113,7 @@ export function VehicleFormModal({
       await onSubmit({
         ...values,
         plate: values.plate.toUpperCase(),
+        version: values.version || null,
         inspectionDate: values.inspectionDate || null,
         insuranceDate: values.insuranceDate || null,
         notes: values.notes || null,
@@ -182,6 +191,12 @@ export function VehicleFormModal({
             </label>
 
             <label className={fieldClass}>
+              <span className={labelClass}>Versão</span>
+              <input className={inputClass} placeholder="Tourer, Sport, L3H2..." {...register("version")} />
+              {errors.version && <small className={errorClass}>{errors.version.message}</small>}
+            </label>
+
+            <label className={fieldClass}>
               <span className={labelClass}>Ano</span>
               <input className={inputClass} type="number" {...register("year", { valueAsNumber: true })} />
               {errors.year && <small className={errorClass}>{errors.year.message}</small>}
@@ -193,13 +208,24 @@ export function VehicleFormModal({
                 <input
                   className={`${inputClass} pr-10`}
                   type="number"
-                  {...register("mileage", { valueAsNumber: true })}
+                  {...register("currentMileage", { valueAsNumber: true })}
                 />
                 <span className="absolute right-[11px] top-1/2 -translate-y-1/2 text-[10px] text-[#8c9790]">
                   km
                 </span>
               </div>
-              {errors.mileage && <small className={errorClass}>{errors.mileage.message}</small>}
+              {errors.currentMileage && <small className={errorClass}>{errors.currentMileage.message}</small>}
+            </label>
+
+            <label className={fieldClass}>
+              <span className={labelClass}>Combustível</span>
+              <select className={inputClass} {...register("fuelType")}>
+                {fuelTypes.map((fuelType) => (
+                  <option key={fuelType} value={fuelType}>
+                    {fuelTypeLabels[fuelType]}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className={fieldClass}>
@@ -212,8 +238,6 @@ export function VehicleFormModal({
                 ))}
               </select>
             </label>
-
-            <div className="max-md:hidden" />
 
             <label className={fieldClass}>
               <span className={labelClass}>Validade da inspeção</span>

@@ -70,7 +70,7 @@ export function DashboardPage() {
                 </div>
                 <StatusBadge status={vehicle.status} />
                 <span className="mt-[3px] text-right text-[11px] text-[#859088] max-md:hidden">
-                  {new Intl.NumberFormat("pt-PT").format(vehicle.mileage)} km
+                  {new Intl.NumberFormat("pt-PT").format(vehicle.currentMileage)} km
                 </span>
               </div>
             ))}
