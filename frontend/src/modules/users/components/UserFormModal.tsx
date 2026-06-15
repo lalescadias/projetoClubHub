@@ -28,11 +28,11 @@ const availableRoles: { value: ClubRole; label: string }[] = [
 export function UserFormModal({
   onClose,
   onSubmit,
-  canCreateAdministrators,
+  canCreateSuperAdministrators,
 }: {
   onClose: () => void;
   onSubmit: (payload: CreateClubUserPayload) => Promise<void>;
-  canCreateAdministrators: boolean;
+  canCreateSuperAdministrators: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const {
@@ -56,9 +56,9 @@ export function UserFormModal({
 
   const inputClass =
     "h-11 rounded-lg border border-[#d9e0da] bg-white px-3 text-sm outline-none focus:border-club-500 focus:ring-3 focus:ring-club-500/10";
-  const roles = canCreateAdministrators
+  const roles = canCreateSuperAdministrators
     ? availableRoles
-    : availableRoles.filter((role) => role.value === "MEMBER");
+    : availableRoles.filter((role) => role.value !== "SUPER_ADMIN");
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-club-950/60 p-5 backdrop-blur-sm max-sm:place-items-end max-sm:p-0">

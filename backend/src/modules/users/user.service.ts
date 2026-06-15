@@ -333,9 +333,9 @@ export class UserService {
 
   private assertCanAssignRole(actorRole: AccessRole, role: ManagedRole) {
     if (actorRole === UserRole.SUPER_ADMIN) return;
-    if (role !== ClubRole.MEMBER) {
+    if (role === UserRole.SUPER_ADMIN) {
       throw new AppError(
-        "Apenas um superadministrador pode criar ou promover administradores.",
+        "Apenas um superadministrador pode criar ou promover superadministradores.",
         403,
       );
     }

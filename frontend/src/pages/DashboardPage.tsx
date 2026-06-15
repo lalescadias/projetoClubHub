@@ -1,14 +1,24 @@
 import { ArrowRight, CalendarDays, CheckCircle2, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
+import { useAuth } from "../modules/auth/context/AuthContext";
 import { VehicleStats } from "../modules/vehicles/components/VehicleStats";
 import { StatusBadge } from "../modules/vehicles/components/StatusBadge";
 import { useVehicleDashboard } from "../modules/vehicles/hooks/useVehicleDashboard";
 import { useVehicles } from "../modules/vehicles/hooks/useVehicles";
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const dashboard = useVehicleDashboard();
   const vehicles = useVehicles({ page: 1, limit: 5 });
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12
+      ? "Bom dia"
+      : currentHour < 20
+        ? "Boa tarde"
+        : "Boa noite";
+  const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
   const today = new Intl.DateTimeFormat("pt-PT", {
     weekday: "long",
     day: "numeric",
@@ -23,7 +33,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         eyebrow={today}
-        title="Bom dia, Nuno."
+        title={`${greeting}${firstName ? `, ${firstName}` : ""}.`}
         description="Aqui está o ponto de situação do clube."
       />
 

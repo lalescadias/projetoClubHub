@@ -255,7 +255,7 @@ export function UsersPage() {
         <UserFormModal
           onClose={() => setShowForm(false)}
           onSubmit={create}
-          canCreateAdministrators={isSuperAdmin}
+          canCreateSuperAdministrators={isSuperAdmin}
         />
       )}
       {userToEdit && (

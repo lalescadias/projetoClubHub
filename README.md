@@ -233,8 +233,8 @@ Funções disponíveis:
 
 - `SUPER_ADMIN`: conta global sem membership; gere todos os clubes, utilizadores
   e recursos.
-- `ADMIN`: pertence obrigatoriamente a um clube, gere recursos e membros desse
-  clube, mas não gere administradores nem superadministradores.
+- `ADMIN`: pertence obrigatoriamente a um clube, gere recursos e pode criar
+  administradores ou membros nesse clube, mas não gere superadministradores.
 - `MEMBER`: consulta dashboard e viaturas.
 
 A remoção de um utilizador exige o corpo `{ "confirmation": "delete" }`. Um
