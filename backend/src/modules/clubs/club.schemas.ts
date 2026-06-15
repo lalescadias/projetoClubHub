@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const themeColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9A-Fa-f]{6}$/, "Indique uma cor hexadecimal válida.")
+  .transform((value) => value.toUpperCase());
+
 const slugSchema = z
   .string()
   .trim()
@@ -22,6 +28,10 @@ export const updateClubBodySchema = clubBodySchema.partial().refine(
 
 export const clubParamsSchema = z.object({
   clubId: z.string().uuid(),
+});
+
+export const updateClubThemeSchema = z.object({
+  themeColor: themeColorSchema,
 });
 
 export const deleteClubBodySchema = z.object({

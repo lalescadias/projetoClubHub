@@ -19,6 +19,14 @@ export const clubController = {
     response.json({ data: club });
   }) satisfies RequestHandler,
 
+  updateTheme: (async (request, response) => {
+    const club = await clubService.updateTheme(
+      request.auth!.clubId!,
+      request.body.themeColor,
+    );
+    response.json({ data: club });
+  }) satisfies RequestHandler,
+
   remove: (async (request, response) => {
     await clubService.remove(request.params.clubId as string);
     response.status(204).send();

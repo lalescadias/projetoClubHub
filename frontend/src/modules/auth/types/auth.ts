@@ -4,6 +4,7 @@ export type Club = {
   id: string;
   name: string;
   slug: string;
+  themeColor: string;
 };
 
 export type Membership = {

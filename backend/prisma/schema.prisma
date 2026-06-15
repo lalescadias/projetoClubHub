@@ -44,6 +44,7 @@ model Club {
   id          String       @id @default(uuid())
   name        String       @db.VarChar(120)
   slug        String       @unique @db.VarChar(80)
+  themeColor  String       @default("#1D4635") @db.VarChar(7)
   memberships Membership[]
   vehicles    Vehicle[]
   createdAt   DateTime     @default(now())

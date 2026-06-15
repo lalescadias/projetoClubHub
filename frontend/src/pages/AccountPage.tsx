@@ -1,12 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { KeyRound, LogOut, UserRound } from "lucide-react";
-import { useState } from "react";
+import { KeyRound, LogOut, Palette, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { PageHeader } from "../components/PageHeader";
 import { authApi } from "../modules/auth/api/auth.api";
 import { useAuth } from "../modules/auth/context/AuthContext";
+import { clubApi } from "../modules/clubs/api/club.api";
 import { getErrorMessage } from "../services/error.service";
 
 const schema = z.object({
@@ -19,16 +20,36 @@ const schema = z.object({
 });
 type PasswordValues = z.infer<typeof schema>;
 
+const themeColors = [
+  "#1D4635",
+  "#1E4F8A",
+  "#6B3FA0",
+  "#A04444",
+  "#A35F16",
+  "#255E63",
+];
+
 export function AccountPage() {
-  const { user, activeRole, activeClub, logout } = useAuth();
+  const { user, activeRole, activeClub, logout, refreshSession } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState<string | null>(null);
+  const [themeColor, setThemeColor] = useState(
+    activeClub?.themeColor ?? "#1D4635",
+  );
+  const [themeMessage, setThemeMessage] = useState<string | null>(null);
+  const [savingTheme, setSavingTheme] = useState(false);
+  const canManageTheme =
+    activeRole === "ADMIN" || activeRole === "SUPER_ADMIN";
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PasswordValues>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    setThemeColor(activeClub?.themeColor ?? "#1D4635");
+  }, [activeClub?.themeColor]);
 
   const submit = async (values: PasswordValues) => {
     try {
@@ -44,6 +65,20 @@ export function AccountPage() {
   const signOut = () => {
     logout();
     navigate("/login", { replace: true });
+  };
+
+  const saveTheme = async () => {
+    try {
+      setSavingTheme(true);
+      setThemeMessage(null);
+      await clubApi.updateTheme(themeColor);
+      await refreshSession();
+      setThemeMessage("Cor do clube guardada com sucesso.");
+    } catch (error) {
+      setThemeMessage(getErrorMessage(error));
+    } finally {
+      setSavingTheme(false);
+    }
   };
 
   const inputClass = "h-11 rounded-lg border border-[#d9e0da] px-3 text-sm outline-none focus:border-club-500 focus:ring-3 focus:ring-club-500/10";
@@ -81,6 +116,77 @@ export function AccountPage() {
             <button className="mt-1 h-11 rounded-lg bg-club-800 text-xs font-bold text-white" disabled={isSubmitting}>{isSubmitting ? "A alterar..." : "Alterar palavra-passe"}</button>
           </form>
         </section>
+
+        {activeClub && canManageTheme && (
+          <section className="col-span-full rounded-[13px] border border-[#dde4de] bg-white p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-club-100 text-club-600">
+                <Palette size={20} />
+              </span>
+              <div>
+                <h2 className="m-0 font-display text-lg">
+                  Aparência do clube
+                </h2>
+                <p className="m-0 text-xs text-[#7c8981]">
+                  Esta cor será aplicada a todos os utilizadores de{" "}
+                  {activeClub.name}.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {themeColors.map((color) => (
+                <button
+                  key={color}
+                  className={`h-11 w-11 rounded-xl border-4 transition ${
+                    themeColor === color
+                      ? "border-club-950 shadow-md"
+                      : "border-white shadow-sm ring-1 ring-black/10"
+                  }`}
+                  style={{ backgroundColor: color }}
+                  type="button"
+                  onClick={() => setThemeColor(color)}
+                  aria-label={`Selecionar cor ${color}`}
+                />
+              ))}
+              <label className="ml-2 inline-flex h-11 items-center gap-3 rounded-xl border border-[#d9e0da] px-3 text-xs font-bold text-[#4f5d55]">
+                Cor personalizada
+                <input
+                  className="h-7 w-9 cursor-pointer border-0 bg-transparent p-0"
+                  type="color"
+                  value={themeColor}
+                  onChange={(event) =>
+                    setThemeColor(event.target.value.toUpperCase())
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0ed] pt-5">
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wide text-[#7c8981]">
+                  Cor selecionada
+                </span>
+                <strong className="mt-1 block text-sm">{themeColor}</strong>
+              </div>
+              <button
+                className="h-11 rounded-lg bg-club-800 px-5 text-xs font-bold text-white"
+                disabled={
+                  savingTheme || themeColor === activeClub.themeColor
+                }
+                type="button"
+                onClick={() => void saveTheme()}
+              >
+                {savingTheme ? "A guardar..." : "Guardar aparência"}
+              </button>
+            </div>
+            {themeMessage && (
+              <div className="mt-4 rounded-lg bg-[#f1f6f1] p-3 text-xs text-[#356347]">
+                {themeMessage}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </>
   );

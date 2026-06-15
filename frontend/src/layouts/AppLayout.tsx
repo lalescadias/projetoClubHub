@@ -67,7 +67,7 @@ export function AppLayout() {
               className={({ isActive }) =>
                 `flex min-h-[45px] items-center gap-3 rounded-[9px] px-[13px] text-sm font-semibold transition ${
                   isActive
-                    ? "bg-[#285640] text-white shadow-[inset_3px_0_#bcd69c]"
+                    ? "bg-club-800 text-white shadow-[inset_3px_0_var(--club-500)]"
                     : "text-[#9fb1a8] hover:bg-white/5 hover:text-white"
                 }`
               }
@@ -81,7 +81,7 @@ export function AppLayout() {
 
         <div className="border-t border-white/8 pt-[18px]">
           <div className="flex items-center gap-2.5 p-[7px]">
-            <div className="grid h-[35px] w-[35px] shrink-0 place-items-center rounded-[9px] bg-[#dfeaca] text-xs font-bold text-club-900">
+            <div className="grid h-[35px] w-[35px] shrink-0 place-items-center rounded-[9px] bg-club-100 text-xs font-bold text-club-900">
               {activeClub?.name.slice(0, 2).toUpperCase() ?? "CH"}
             </div>
             <div className="min-w-0 flex-1">

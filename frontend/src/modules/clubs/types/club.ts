@@ -2,6 +2,7 @@ export type ManagedClub = {
   id: string;
   name: string;
   slug: string;
+  themeColor: string;
   createdAt: string;
   updatedAt: string;
   _count: {

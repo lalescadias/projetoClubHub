@@ -205,6 +205,7 @@ Base URL: `http://localhost:3333/api`
 | `POST` | `/clubs` | Cria um clube, apenas superadmin |
 | `PATCH` | `/clubs/:clubId` | Edita um clube, apenas superadmin |
 | `DELETE` | `/clubs/:clubId` | Remove um clube, apenas superadmin |
+| `PATCH` | `/clubs/current/theme` | Altera a cor do clube, admin ou superadmin |
 | `GET` | `/vehicles` | Lista paginada de viaturas |
 | `GET` | `/vehicles/dashboard` | Totais por estado |
 | `GET` | `/vehicles/:id` | Detalhe de uma viatura |

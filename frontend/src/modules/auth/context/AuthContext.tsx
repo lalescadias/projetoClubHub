@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { authApi } from "../api/auth.api";
+import { applyClubTheme } from "../../clubs/services/club-theme";
 import { sessionStorage } from "../services/session.storage";
 import type { Membership, SessionUser } from "../types/auth";
 
@@ -69,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const activeMembership = user?.membership ?? null;
   const activeRole = user?.role ?? null;
   const activeClub = user?.club ?? null;
+
+  useEffect(() => {
+    applyClubTheme(activeClub?.themeColor);
+  }, [activeClub?.themeColor]);
 
   const value = useMemo(
     () => ({

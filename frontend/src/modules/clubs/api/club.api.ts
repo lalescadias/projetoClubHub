@@ -24,6 +24,13 @@ export const clubApi = {
     return response.data.data;
   },
 
+  async updateTheme(themeColor: string) {
+    const response = await apiClient.patch<
+      ApiResponse<Pick<ManagedClub, "id" | "name" | "slug" | "themeColor">>
+    >("/clubs/current/theme", { themeColor });
+    return response.data.data;
+  },
+
   async remove(clubId: string, confirmation: string) {
     await apiClient.delete(`/clubs/${clubId}`, {
       data: { confirmation },

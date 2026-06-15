@@ -7,7 +7,12 @@ import {
 } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
 
-const clubSelect = { id: true, name: true, slug: true } as const;
+const clubSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  themeColor: true,
+} as const;
 
 export class AuthService {
   async login(clubSlug: string | undefined, email: string, password: string) {
@@ -81,12 +86,14 @@ export class AuthService {
             id: membership.club.id,
             name: membership.club.name,
             slug: membership.club.slug,
+            themeColor: membership.club.themeColor,
           },
         },
         club: {
           id: membership.club.id,
           name: membership.club.name,
           slug: membership.club.slug,
+          themeColor: membership.club.themeColor,
         },
       },
     };

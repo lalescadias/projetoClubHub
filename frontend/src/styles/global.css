@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
-@theme {
+:root {
+  --club-950: #10271e;
+  --club-900: #173629;
+  --club-800: #1d4635;
+  --club-600: #2b7a56;
+  --club-500: #3c9369;
+  --club-100: #e7f3ec;
+}
+
+@theme inline {
   --font-sans: "DM Sans", sans-serif;
   --font-display: "Manrope", sans-serif;
-  --color-club-950: #10271e;
-  --color-club-900: #173629;
-  --color-club-800: #1d4635;
-  --color-club-600: #2b7a56;
-  --color-club-500: #3c9369;
-  --color-club-100: #e7f3ec;
+  --color-club-950: var(--club-950);
+  --color-club-900: var(--club-900);
+  --color-club-800: var(--club-800);
+  --color-club-600: var(--club-600);
+  --color-club-500: var(--club-500);
+  --color-club-100: var(--club-100);
 }
 
 @layer base {

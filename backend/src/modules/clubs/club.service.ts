@@ -5,6 +5,7 @@ const clubSelect = {
   id: true,
   name: true,
   slug: true,
+  themeColor: true,
   createdAt: true,
   updatedAt: true,
   _count: {
@@ -68,6 +69,20 @@ export class ClubService {
       );
     }
     await prisma.club.delete({ where: { id: clubId } });
+  }
+
+  async updateTheme(clubId: string, themeColor: string) {
+    await this.getById(clubId);
+    return prisma.club.update({
+      where: { id: clubId },
+      data: { themeColor },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        themeColor: true,
+      },
+    });
   }
 
   private async getById(clubId: string) {
