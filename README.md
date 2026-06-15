@@ -83,8 +83,7 @@ docker compose down
 ```
 
 O seed pode criar o primeiro administrador e um membro através das variáveis
-`SEED_ADMIN_*` e `SEED_MEMBER_*` do `.env` local. Nenhuma credencial é guardada
-no código ou na documentação.
+`SEED_ADMIN_*` e `SEED_MEMBER_*` do `.env` local.
 
 Para remover também os dados locais:
 
@@ -148,8 +147,6 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-Nunca faça commit dos ficheiros `.env`. Use palavras-passe únicas e gere
-`JWT_SECRET` com pelo menos 32 bytes aleatórios.
 
 ### 5. Preparar a base de dados
 
