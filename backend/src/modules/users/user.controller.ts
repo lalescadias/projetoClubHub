@@ -8,7 +8,10 @@ export const userController = {
   }) satisfies RequestHandler,
 
   create: (async (request, response) => {
-    const membership = await userService.create(request.auth!.clubId!, request.body);
+    const membership = await userService.create(
+      request.auth!.clubId!,
+      request.body,
+    );
     response.status(201).json({ data: membership });
   }) satisfies RequestHandler,
 
@@ -20,5 +23,14 @@ export const userController = {
       request.body,
     );
     response.json({ data: membership });
+  }) satisfies RequestHandler,
+
+  remove: (async (request, response) => {
+    await userService.removeMembership(
+      request.auth!.clubId!,
+      request.params.membershipId as string,
+      request.auth!.membershipId!,
+    );
+    response.status(204).send();
   }) satisfies RequestHandler,
 };

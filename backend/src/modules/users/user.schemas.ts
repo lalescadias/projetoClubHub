@@ -15,12 +15,32 @@ export const createClubUserSchema = z.object({
 
 export const updateMembershipSchema = z
   .object({
+    name: z.string().trim().min(2).max(120).optional(),
+    email: z
+      .string()
+      .trim()
+      .email()
+      .transform((value) => value.toLowerCase())
+      .optional(),
     role: z.nativeEnum(ClubRole).optional(),
     isActive: z.boolean().optional(),
   })
-  .refine((value) => value.role !== undefined || value.isActive !== undefined, {
-    message: "Indique pelo menos uma alteração.",
-  });
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.email !== undefined ||
+      value.role !== undefined ||
+      value.isActive !== undefined,
+    { message: "Indique pelo menos uma alteração." },
+  );
+
+export const deleteMembershipBodySchema = z.object({
+  confirmation: z.literal("delete", {
+    errorMap: () => ({
+      message: 'Escreva "delete" para confirmar a eliminação.',
+    }),
+  }),
+});
 
 export const membershipParamsSchema = z.object({
   membershipId: z.string().uuid(),

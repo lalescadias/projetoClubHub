@@ -1,7 +1,10 @@
 import { apiClient } from "../../../api/client";
 import type { ApiResponse } from "../../../types/api";
-import type { ClubRole } from "../../auth/types/auth";
-import type { ClubUser, CreateClubUserPayload } from "../types/user";
+import type {
+  ClubUser,
+  CreateClubUserPayload,
+  UpdateClubUserPayload,
+} from "../types/user";
 
 export const userApi = {
   async list() {
@@ -16,12 +19,18 @@ export const userApi = {
 
   async update(
     membershipId: string,
-    payload: { role?: ClubRole; isActive?: boolean },
+    payload: UpdateClubUserPayload,
   ) {
     const response = await apiClient.patch<ApiResponse<ClubUser>>(
       `/users/${membershipId}`,
       payload,
     );
     return response.data.data;
+  },
+
+  async remove(membershipId: string, confirmation: string) {
+    await apiClient.delete(`/users/${membershipId}`, {
+      data: { confirmation },
+    });
   },
 };

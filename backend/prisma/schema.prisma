@@ -57,18 +57,30 @@ model User {
 }
 
 model Membership {
-  id        String   @id @default(uuid())
-  role      ClubRole @default(MEMBER)
-  isActive  Boolean  @default(true)
-  userId    String
-  clubId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                       String                    @id @default(uuid())
+  role                     ClubRole                  @default(MEMBER)
+  isActive                 Boolean                   @default(true)
+  userId                   String
+  clubId                   String
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club                     Club                      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  dismissedNotifications   NotificationDismissal[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
 
   @@unique([userId, clubId])
   @@index([clubId, isActive])
+}
+
+model NotificationDismissal {
+  id             String     @id @default(uuid())
+  notificationId String     @db.VarChar(240)
+  membershipId   String
+  membership     Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+
+  @@unique([membershipId, notificationId])
+  @@index([membershipId])
 }
 
 model Vehicle {

@@ -19,3 +19,10 @@ export type CreateClubUserPayload = {
   password: string;
   role: ClubRole;
 };
+
+export type UpdateClubUserPayload = {
+  name?: string;
+  email?: string;
+  role?: ClubRole;
+  isActive?: boolean;
+};

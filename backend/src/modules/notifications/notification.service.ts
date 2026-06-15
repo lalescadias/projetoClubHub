@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../errors/app-error.js";
 import type {
   NotificationSeverity,
   NotificationType,
@@ -20,6 +21,10 @@ function getSeverity(daysRemaining: number): NotificationSeverity | null {
   if (daysRemaining <= 15) return "WARNING";
   if (daysRemaining <= 30) return "INFO";
   return null;
+}
+
+function dateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function createNotification(
@@ -60,7 +65,7 @@ function createNotification(
   }
 
   return {
-    id: `${type.toLowerCase()}-${vehicle.id}`,
+    id: `${type.toLowerCase()}-${vehicle.id}-${dateKey(dueDate)}`,
     type,
     severity,
     title,
@@ -94,7 +99,7 @@ function createRevisionMileageNotification(
   const exceededBy = Math.abs(kilometersRemaining);
 
   return {
-    id: `revision-mileage-${vehicle.id}`,
+    id: `revision-mileage-${vehicle.id}-${dueMileage}`,
     type: "REVISION_MILEAGE",
     severity: overdue ? "URGENT" : "WARNING",
     title: overdue
@@ -118,7 +123,45 @@ function createRevisionMileageNotification(
 }
 
 export class NotificationService {
-  async listByClub(clubId: string, today = new Date()) {
+  async listByClub(
+    clubId: string,
+    membershipId: string,
+    today = new Date(),
+  ) {
+    const notifications = await this.calculateByClub(clubId, today);
+    if (notifications.length === 0) return notifications;
+
+    const dismissed = await prisma.notificationDismissal.findMany({
+      where: {
+        membershipId,
+        notificationId: { in: notifications.map((item) => item.id) },
+      },
+      select: { notificationId: true },
+    });
+    const dismissedIds = new Set(dismissed.map((item) => item.notificationId));
+    return notifications.filter((item) => !dismissedIds.has(item.id));
+  }
+
+  async dismiss(
+    clubId: string,
+    membershipId: string,
+    notificationId: string,
+  ) {
+    const notifications = await this.calculateByClub(clubId, new Date());
+    if (!notifications.some((item) => item.id === notificationId)) {
+      throw new AppError("Notificação não encontrada.", 404);
+    }
+
+    await prisma.notificationDismissal.upsert({
+      where: {
+        membershipId_notificationId: { membershipId, notificationId },
+      },
+      create: { membershipId, notificationId },
+      update: {},
+    });
+  }
+
+  private async calculateByClub(clubId: string, today: Date) {
     const vehicles = await prisma.vehicle.findMany({
       where: { clubId },
       select: {
@@ -170,7 +213,7 @@ export class NotificationService {
           today,
         );
         if (notification) {
-          notification.id = `revision-date-${vehicle.id}`;
+          notification.id = `revision-date-${vehicle.id}-${latestRevision.id}-${dateKey(latestRevision.nextRevisionDate)}`;
           notification.title =
             notification.daysRemaining! < 0
               ? "Revisão vencida"

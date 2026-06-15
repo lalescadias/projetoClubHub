@@ -47,5 +47,16 @@ export function useNotifications() {
     };
   }, [load]);
 
-  return { notifications, loading, error, reload: load };
+  const dismiss = useCallback(
+    async (notificationId: string) => {
+      await notificationApi.dismiss(notificationId);
+      setNotifications((items) =>
+        items.filter((item) => item.id !== notificationId),
+      );
+      refreshNotifications();
+    },
+    [],
+  );
+
+  return { notifications, loading, error, reload: load, dismiss };
 }

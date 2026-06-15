@@ -9,4 +9,8 @@ export const notificationApi = {
     );
     return response.data.data;
   },
+
+  async dismiss(notificationId: string) {
+    await apiClient.delete(`/notifications/${encodeURIComponent(notificationId)}`);
+  },
 };

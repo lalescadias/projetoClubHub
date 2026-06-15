@@ -8,8 +8,10 @@ import {
   Gauge,
   Info,
   ShieldCheck,
+  Trash2,
   Wrench,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
@@ -18,6 +20,7 @@ import type {
   Notification,
   NotificationSeverity,
 } from "../modules/notifications/types/notification";
+import { getErrorMessage } from "../services/error.service";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
   day: "2-digit",
@@ -68,7 +71,9 @@ const typeConfig = {
 };
 
 export function NotificationsPage() {
-  const { notifications, loading, error, reload } = useNotifications();
+  const { notifications, loading, error, reload, dismiss } = useNotifications();
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [dismissError, setDismissError] = useState<string | null>(null);
   const counts = {
     INFO: notifications.filter((item) => item.severity === "INFO").length,
     WARNING: notifications.filter((item) => item.severity === "WARNING").length,
@@ -82,6 +87,12 @@ export function NotificationsPage() {
         title="Notificações"
         description="Prazos de inspeção, seguro e revisão calculados automaticamente."
       />
+
+      {dismissError && (
+        <div className="mb-4 rounded-xl border border-[#efcaca] bg-[#fff0f0] p-4 text-xs text-[#974141]">
+          {dismissError}
+        </div>
+      )}
 
       {loading ? (
         <LoadingState />
@@ -137,6 +148,18 @@ export function NotificationsPage() {
                 <NotificationCard
                   key={notification.id}
                   notification={notification}
+                  dismissing={dismissingId === notification.id}
+                  onDismiss={async () => {
+                    try {
+                      setDismissingId(notification.id);
+                      setDismissError(null);
+                      await dismiss(notification.id);
+                    } catch (requestError) {
+                      setDismissError(getErrorMessage(requestError));
+                    } finally {
+                      setDismissingId(null);
+                    }
+                  }}
                 />
               ))}
             </section>
@@ -147,7 +170,15 @@ export function NotificationsPage() {
   );
 }
 
-function NotificationCard({ notification }: { notification: Notification }) {
+function NotificationCard({
+  notification,
+  dismissing,
+  onDismiss,
+}: {
+  notification: Notification;
+  dismissing: boolean;
+  onDismiss: () => Promise<void>;
+}) {
   const severity = severityConfig[notification.severity];
   const SeverityIcon = severity.icon;
   const type = typeConfig[notification.type];
@@ -201,12 +232,24 @@ function NotificationCard({ notification }: { notification: Notification }) {
           )}
         </div>
       </div>
-      <Link
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-black/8 bg-white px-3 py-2 text-[11px] font-bold text-club-600 max-sm:ml-[60px]"
-        to={`/vehicles/${notification.vehicleId}`}
-      >
-        Ver viatura <ArrowRight size={14} />
-      </Link>
+      <div className="flex shrink-0 gap-2 max-sm:ml-[60px]">
+        <Link
+          className="inline-flex items-center gap-1.5 rounded-lg border border-black/8 bg-white px-3 py-2 text-[11px] font-bold text-club-600"
+          to={`/vehicles/${notification.vehicleId}`}
+        >
+          Ver viatura <ArrowRight size={14} />
+        </Link>
+        <button
+          className="grid h-9 w-9 place-items-center rounded-lg border border-[#efcece] bg-white text-[#b84b4b] hover:bg-[#fceaea] disabled:opacity-40"
+          type="button"
+          disabled={dismissing}
+          onClick={() => void onDismiss()}
+          aria-label="Apagar notificação"
+          title="Apagar notificação"
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
     </article>
   );
 }

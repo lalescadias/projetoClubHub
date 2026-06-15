@@ -200,6 +200,7 @@ Base URL: `http://localhost:3333/api`
 | `GET` | `/auth/me` | Sessão e clubes do utilizador |
 | `PATCH` | `/auth/password` | Altera a palavra-passe |
 | `GET` | `/notifications` | Gera alertas dinâmicos de inspeção e seguro |
+| `DELETE` | `/notifications/:notificationId` | Oculta uma notificação para o utilizador atual |
 | `GET` | `/vehicles` | Lista paginada de viaturas |
 | `GET` | `/vehicles/dashboard` | Totais por estado |
 | `GET` | `/vehicles/:id` | Detalhe de uma viatura |
@@ -216,7 +217,8 @@ Base URL: `http://localhost:3333/api`
 | `DELETE` | `/vehicles/:id/revisions/:revisionId` | Remove uma revisão, apenas admin |
 | `GET` | `/users` | Lista utilizadores do clube, apenas admin |
 | `POST` | `/users` | Adiciona utilizador ao clube, apenas admin |
-| `PATCH` | `/users/:membershipId` | Altera função ou estado, apenas admin |
+| `PATCH` | `/users/:membershipId` | Altera nome, email, função ou estado, apenas admin |
+| `DELETE` | `/users/:membershipId` | Remove o acesso do utilizador ao clube, apenas admin |
 
 O login exige o código do clube, email e palavra-passe. O token JWT fica vinculado
 à inscrição nesse clube e não pode ser reutilizado para aceder a outro clube. As
@@ -226,6 +228,11 @@ Funções disponíveis:
 
 - `ADMIN`: gere utilizadores e viaturas.
 - `MEMBER`: consulta dashboard e viaturas.
+
+A remoção de um utilizador exige o corpo `{ "confirmation": "delete" }`. Um
+administrador não pode apagar a sua própria inscrição nem remover o último
+administrador ativo do clube. Se o utilizador pertencer a outros clubes, apenas
+a inscrição no clube atual é removida.
 
 Parâmetros de `GET /vehicles`:
 
@@ -290,6 +297,10 @@ recente de cada viatura:
   foi atingido;
 - revisão por quilometragem vencida quando a quilometragem prevista foi
   ultrapassada.
+
+Uma notificação pode ser dispensada individualmente. A dispensa fica associada
+à inscrição do utilizador no clube e não afeta os restantes utilizadores. Se o
+prazo ou a quilometragem prevista mudar, é gerada uma nova notificação.
 
 ## Scripts úteis
 
