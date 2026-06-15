@@ -5,6 +5,7 @@ import { userRoutes } from "../modules/users/user.routes.js";
 import { authenticate } from "../middlewares/authenticate.js";
 import { requireClubContext } from "../middlewares/club-context.js";
 import { notificationRoutes } from "../modules/notifications/notification.routes.js";
+import { clubRoutes } from "../modules/clubs/club.routes.js";
 
 export const apiRoutes = Router();
 
@@ -17,6 +18,7 @@ apiRoutes.get("/health", (_request, response) => {
 });
 
 apiRoutes.use("/auth", authRoutes);
+apiRoutes.use("/clubs", authenticate, clubRoutes);
 apiRoutes.use("/vehicles", authenticate, requireClubContext, vehicleRoutes);
 apiRoutes.use("/users", authenticate, requireClubContext, userRoutes);
 apiRoutes.use(

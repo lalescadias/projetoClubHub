@@ -14,6 +14,8 @@ import type { Membership, SessionUser } from "../types/auth";
 type AuthContextValue = {
   user: SessionUser | null;
   activeMembership: Membership | null;
+  activeRole: SessionUser["role"] | null;
+  activeClub: SessionUser["club"];
   loading: boolean;
   login: (club: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -65,17 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const activeMembership = user?.membership ?? null;
+  const activeRole = user?.role ?? null;
+  const activeClub = user?.club ?? null;
 
   const value = useMemo(
     () => ({
       user,
       activeMembership,
+      activeRole,
+      activeClub,
       loading,
       login,
       logout,
       refreshSession,
     }),
-    [activeMembership, loading, user],
+    [activeClub, activeMembership, activeRole, loading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -20,8 +20,9 @@ import { useAuth } from "../modules/auth/context/AuthContext";
 
 export function VehiclesPage() {
   const navigate = useNavigate();
-  const { activeMembership } = useAuth();
-  const canManage = activeMembership?.role === "ADMIN";
+  const { activeRole } = useAuth();
+  const canManage =
+    activeRole === "ADMIN" || activeRole === "SUPER_ADMIN";
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
   const [page, setPage] = useState(1);

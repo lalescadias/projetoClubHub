@@ -10,26 +10,29 @@ export const userController = {
   create: (async (request, response) => {
     const membership = await userService.create(
       request.auth!.clubId!,
+      request.auth!.role!,
       request.body,
     );
     response.status(201).json({ data: membership });
   }) satisfies RequestHandler,
 
   update: (async (request, response) => {
-    const membership = await userService.updateMembership(
+    const membership = await userService.update(
       request.auth!.clubId!,
       request.params.membershipId as string,
-      request.auth!.membershipId!,
+      request.auth!.userId,
+      request.auth!.role!,
       request.body,
     );
     response.json({ data: membership });
   }) satisfies RequestHandler,
 
   remove: (async (request, response) => {
-    await userService.removeMembership(
+    await userService.remove(
       request.auth!.clubId!,
       request.params.membershipId as string,
-      request.auth!.membershipId!,
+      request.auth!.userId,
+      request.auth!.role!,
     );
     response.status(204).send();
   }) satisfies RequestHandler,

@@ -8,6 +8,7 @@ import { AccountPage } from "./pages/AccountPage";
 import { UsersPage } from "./pages/UsersPage";
 import { VehicleDetailsPage } from "./pages/VehicleDetailsPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
+import { ClubsPage } from "./pages/ClubsPage";
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
           <Route path="vehicles/:id" element={<VehicleDetailsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="clubs" element={<ClubsPage />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

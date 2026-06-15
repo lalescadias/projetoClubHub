@@ -1,3 +1,4 @@
+import { UserRole } from "@prisma/client";
 import type { RequestHandler } from "express";
 import { AppError } from "../errors/app-error.js";
 import { verifyAccessToken } from "../lib/auth.js";
@@ -12,11 +13,38 @@ export const authenticate: RequestHandler = async (request, _response, next) => 
 
   try {
     const payload = verifyAccessToken(authorization.slice(7));
+
+    if (payload.role === UserRole.SUPER_ADMIN) {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: payload.sub,
+          role: UserRole.SUPER_ADMIN,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      if (!user) {
+        throw new AppError("A conta está inativa ou deixou de ser superadministrador.", 403);
+      }
+      request.auth = {
+        userId: user.id,
+        clubId: payload.clubId,
+        role: UserRole.SUPER_ADMIN,
+      };
+      next();
+      return;
+    }
+
+    if (!payload.membershipId || !payload.clubId) {
+      throw new AppError("A sessão de clube é inválida.", 401);
+    }
+
     const membership = await prisma.membership.findFirst({
       where: {
         id: payload.membershipId,
         userId: payload.sub,
         clubId: payload.clubId,
+        role: payload.role,
       },
       select: {
         id: true,

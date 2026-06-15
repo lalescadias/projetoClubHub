@@ -1,4 +1,4 @@
-import type { ClubRole } from "@prisma/client";
+import type { AccessRole } from "../lib/auth.js";
 
 declare global {
   namespace Express {
@@ -6,7 +6,7 @@ declare global {
       auth?: {
         userId: string;
         clubId?: string;
-        role?: ClubRole;
+        role: AccessRole;
         membershipId?: string;
       };
     }

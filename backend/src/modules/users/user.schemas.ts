@@ -1,5 +1,6 @@
-import { ClubRole } from "@prisma/client";
 import { z } from "zod";
+
+const managedRoleSchema = z.enum(["SUPER_ADMIN", "ADMIN", "MEMBER"]);
 
 export const createClubUserSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -10,7 +11,7 @@ export const createClubUserSchema = z.object({
     .regex(/[A-Z]/)
     .regex(/[a-z]/)
     .regex(/[0-9]/),
-  role: z.nativeEnum(ClubRole),
+  role: managedRoleSchema,
 });
 
 export const updateMembershipSchema = z
@@ -22,7 +23,7 @@ export const updateMembershipSchema = z
       .email()
       .transform((value) => value.toLowerCase())
       .optional(),
-    role: z.nativeEnum(ClubRole).optional(),
+    role: managedRoleSchema.optional(),
     isActive: z.boolean().optional(),
   })
   .refine(

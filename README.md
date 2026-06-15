@@ -82,8 +82,8 @@ O container do backend executa as migrações e o seed automaticamente. Para par
 docker compose down
 ```
 
-O seed pode criar o primeiro administrador e um membro através das variáveis
-`SEED_ADMIN_*` e `SEED_MEMBER_*` do `.env` local.
+O seed pode criar o superadministrador global e o primeiro administrador do
+clube através de `SEED_SUPER_ADMIN_*` e `SEED_ADMIN_*` no `.env` local.
 
 Para remover também os dados locais:
 
@@ -201,6 +201,10 @@ Base URL: `http://localhost:3333/api`
 | `PATCH` | `/auth/password` | Altera a palavra-passe |
 | `GET` | `/notifications` | Gera alertas dinâmicos de inspeção e seguro |
 | `DELETE` | `/notifications/:notificationId` | Oculta uma notificação para o utilizador atual |
+| `GET` | `/clubs` | Lista todos os clubes, apenas superadmin |
+| `POST` | `/clubs` | Cria um clube, apenas superadmin |
+| `PATCH` | `/clubs/:clubId` | Edita um clube, apenas superadmin |
+| `DELETE` | `/clubs/:clubId` | Remove um clube, apenas superadmin |
 | `GET` | `/vehicles` | Lista paginada de viaturas |
 | `GET` | `/vehicles/dashboard` | Totais por estado |
 | `GET` | `/vehicles/:id` | Detalhe de uma viatura |
@@ -212,27 +216,60 @@ Base URL: `http://localhost:3333/api`
 | `DELETE` | `/vehicles/:id/usages/:usageId` | Apaga a última utilização e repõe quilometragem |
 | `GET` | `/vehicles/:id/revisions` | Histórico paginado de revisões |
 | `GET` | `/vehicles/:id/revisions/:revisionId` | Detalhe de uma revisão |
-| `POST` | `/vehicles/:id/revisions` | Regista uma revisão, apenas admin |
-| `PATCH` | `/vehicles/:id/revisions/:revisionId` | Edita uma revisão, apenas admin |
-| `DELETE` | `/vehicles/:id/revisions/:revisionId` | Remove uma revisão, apenas admin |
-| `GET` | `/users` | Lista utilizadores do clube, apenas admin |
-| `POST` | `/users` | Adiciona utilizador ao clube, apenas admin |
-| `PATCH` | `/users/:membershipId` | Altera nome, email, função ou estado, apenas admin |
-| `DELETE` | `/users/:membershipId` | Remove o acesso do utilizador ao clube, apenas admin |
+| `POST` | `/vehicles/:id/revisions` | Regista uma revisão, admin ou superadmin |
+| `PATCH` | `/vehicles/:id/revisions/:revisionId` | Edita uma revisão, admin ou superadmin |
+| `DELETE` | `/vehicles/:id/revisions/:revisionId` | Remove uma revisão, admin ou superadmin |
+| `GET` | `/users` | Lista utilizadores do clube e superadmins globais |
+| `POST` | `/users` | Adiciona utilizador; só superadmin cria administradores |
+| `PATCH` | `/users/:membershipId` | Altera nome, email, função ou estado |
+| `DELETE` | `/users/:membershipId` | Remove utilizador ou acesso ao clube |
 
-O login exige o código do clube, email e palavra-passe. O token JWT fica vinculado
-à inscrição nesse clube e não pode ser reutilizado para aceder a outro clube. As
-rotas privadas exigem `Authorization: Bearer <token>`.
+Para `ADMIN` e `MEMBER`, o login exige código do clube, email e palavra-passe e
+o token fica vinculado à inscrição nesse clube. O `SUPER_ADMIN` é global, não
+possui `Membership` nem `clubId`; pode indicar um código de clube no login apenas
+para selecionar o contexto de trabalho.
 
 Funções disponíveis:
 
-- `ADMIN`: gere utilizadores e viaturas.
+- `SUPER_ADMIN`: conta global sem membership; gere todos os clubes, utilizadores
+  e recursos.
+- `ADMIN`: pertence obrigatoriamente a um clube, gere recursos e membros desse
+  clube, mas não gere administradores nem superadministradores.
 - `MEMBER`: consulta dashboard e viaturas.
 
 A remoção de um utilizador exige o corpo `{ "confirmation": "delete" }`. Um
-administrador não pode apagar a sua própria inscrição nem remover o último
-administrador ativo do clube. Se o utilizador pertencer a outros clubes, apenas
-a inscrição no clube atual é removida.
+administrador não pode gerir `ADMIN` ou `SUPER_ADMIN`. O último superadministrador
+ativo não pode ser removido, desativado ou convertido para outra função. Se um
+utilizador normal pertencer a outros clubes, apenas a inscrição no clube atual
+é removida.
+
+O seed cria o superadministrador através de:
+
+```env
+SEED_SUPER_ADMIN_NAME=
+SEED_SUPER_ADMIN_EMAIL=
+SEED_SUPER_ADMIN_PASSWORD=
+```
+
+O administrador inicial do clube é mantido pelo seed através de:
+
+```env
+SEED_ADMIN_NAME=
+SEED_ADMIN_EMAIL=
+SEED_ADMIN_PASSWORD=
+```
+
+Se uma destas contas já existir, o seed atualiza apenas os dados de perfil,
+função e estado, preservando o hash da palavra-passe atual. As palavras-passe do
+seed só são necessárias na primeira criação das contas num ambiente novo.
+
+Se estas variáveis ainda não estiverem configuradas numa instalação existente,
+o primeiro administrador ativo é promovido uma única vez para garantir a
+existência permanente de pelo menos um `SUPER_ADMIN`.
+
+Os clubes podem ser criados, editados e removidos por qualquer `SUPER_ADMIN`.
+A remoção exige `{ "confirmation": "delete" }`, elimina os dados associados em
+cascata e o sistema impede que seja apagado o último clube existente.
 
 Parâmetros de `GET /vehicles`:
 
@@ -299,7 +336,7 @@ recente de cada viatura:
   ultrapassada.
 
 Uma notificação pode ser dispensada individualmente. A dispensa fica associada
-à inscrição do utilizador no clube e não afeta os restantes utilizadores. Se o
+ao utilizador e ao clube de trabalho e não afeta os restantes utilizadores. Se o
 prazo ou a quilometragem prevista mudar, é gerada uma nova notificação.
 
 ## Scripts úteis

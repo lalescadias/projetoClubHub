@@ -125,7 +125,7 @@ function createRevisionMileageNotification(
 export class NotificationService {
   async listByClub(
     clubId: string,
-    membershipId: string,
+    userId: string,
     today = new Date(),
   ) {
     const notifications = await this.calculateByClub(clubId, today);
@@ -133,7 +133,8 @@ export class NotificationService {
 
     const dismissed = await prisma.notificationDismissal.findMany({
       where: {
-        membershipId,
+        userId,
+        clubId,
         notificationId: { in: notifications.map((item) => item.id) },
       },
       select: { notificationId: true },
@@ -144,7 +145,7 @@ export class NotificationService {
 
   async dismiss(
     clubId: string,
-    membershipId: string,
+    userId: string,
     notificationId: string,
   ) {
     const notifications = await this.calculateByClub(clubId, new Date());
@@ -154,9 +155,9 @@ export class NotificationService {
 
     await prisma.notificationDismissal.upsert({
       where: {
-        membershipId_notificationId: { membershipId, notificationId },
+        userId_clubId_notificationId: { userId, clubId, notificationId },
       },
-      create: { membershipId, notificationId },
+      create: { userId, clubId, notificationId },
       update: {},
     });
   }

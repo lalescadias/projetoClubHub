@@ -20,7 +20,7 @@ const schema = z.object({
 type PasswordValues = z.infer<typeof schema>;
 
 export function AccountPage() {
-  const { user, activeMembership, logout } = useAuth();
+  const { user, activeRole, activeClub, logout } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -58,8 +58,10 @@ export function AccountPage() {
           <p className="text-sm text-[#6e7c74]">{user?.email}</p>
           <div className="mt-6 rounded-lg bg-[#f5f7f5] p-4 text-xs">
             <span className="block text-[#7c8981]">Clube ativo</span>
-            <strong className="mt-1 block text-[#334139]">{activeMembership?.club.name}</strong>
-            <span className="mt-1 block text-club-600">{activeMembership?.role}</span>
+            <strong className="mt-1 block text-[#334139]">
+              {activeClub?.name ?? "Gestão global"}
+            </strong>
+            <span className="mt-1 block text-club-600">{activeRole}</span>
           </div>
           <button className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#e3caca] text-xs font-bold text-[#a44747]" onClick={signOut}>
             <LogOut size={16} /> Terminar sessão

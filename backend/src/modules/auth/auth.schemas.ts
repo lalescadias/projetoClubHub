@@ -4,9 +4,9 @@ export const loginSchema = z.object({
   club: z
     .string()
     .trim()
-    .min(2)
     .max(80)
-    .transform((value) => value.toLowerCase()),
+    .transform((value) => value.toLowerCase())
+    .optional(),
   email: z.string().trim().email().transform((value) => value.toLowerCase()),
   password: z.string().min(8),
 });

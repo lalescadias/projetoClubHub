@@ -16,20 +16,23 @@ const schema = z.object({
     .regex(/[A-Z]/, "Inclua uma maiúscula.")
     .regex(/[a-z]/, "Inclua uma minúscula.")
     .regex(/[0-9]/, "Inclua um número."),
-  role: z.enum(["ADMIN", "MEMBER"]),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "MEMBER"]),
 });
 
-const roles: { value: ClubRole; label: string }[] = [
+const availableRoles: { value: ClubRole; label: string }[] = [
   { value: "MEMBER", label: "Membro - apenas consulta" },
   { value: "ADMIN", label: "Administrador - acesso total" },
+  { value: "SUPER_ADMIN", label: "Superadministrador - gestão global" },
 ];
 
 export function UserFormModal({
   onClose,
   onSubmit,
+  canCreateAdministrators,
 }: {
   onClose: () => void;
   onSubmit: (payload: CreateClubUserPayload) => Promise<void>;
+  canCreateAdministrators: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const {
@@ -53,6 +56,9 @@ export function UserFormModal({
 
   const inputClass =
     "h-11 rounded-lg border border-[#d9e0da] bg-white px-3 text-sm outline-none focus:border-club-500 focus:ring-3 focus:ring-club-500/10";
+  const roles = canCreateAdministrators
+    ? availableRoles
+    : availableRoles.filter((role) => role.value === "MEMBER");
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-club-950/60 p-5 backdrop-blur-sm max-sm:place-items-end max-sm:p-0">

@@ -1,4 +1,4 @@
-export type ClubRole = "ADMIN" | "MEMBER";
+export type ClubRole = "SUPER_ADMIN" | "ADMIN" | "MEMBER";
 
 export type Club = {
   id: string;
@@ -8,7 +8,7 @@ export type Club = {
 
 export type Membership = {
   id: string;
-  role: ClubRole;
+  role: Exclude<ClubRole, "SUPER_ADMIN">;
   club: Club;
 };
 
@@ -16,7 +16,9 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
-  membership: Membership;
+  role: ClubRole;
+  membership: Membership | null;
+  club: Club | null;
 };
 
 export type LoginResponse = {

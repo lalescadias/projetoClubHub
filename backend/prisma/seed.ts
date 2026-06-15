@@ -1,6 +1,7 @@
 import {
   ClubRole,
   PrismaClient,
+  UserRole,
   VehicleStatus,
   VehicleType,
 } from "@prisma/client";
@@ -69,49 +70,102 @@ const vehicles = [
   },
 ];
 
-async function seedUser(input: {
-  clubId: string;
-  name?: string;
-  email?: string;
-  password?: string;
-  role: ClubRole;
-}) {
-  if (!input.name || !input.email || !input.password) return;
+async function seedSuperAdmin() {
+  const name = process.env.SEED_SUPER_ADMIN_NAME;
+  const emailValue = process.env.SEED_SUPER_ADMIN_EMAIL;
+  const password = process.env.SEED_SUPER_ADMIN_PASSWORD;
 
-  if (input.password.length < 12) {
-    throw new Error("As palavras-passe de bootstrap devem ter pelo menos 12 caracteres.");
+  if (!name || !emailValue) return false;
+  if (password && password.length < 12) {
+    throw new Error(
+      "A palavra-passe do superadministrador deve ter pelo menos 12 caracteres.",
+    );
   }
 
-  const email = input.email.trim().toLowerCase();
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: {
-      name: input.name,
-      passwordHash: await bcrypt.hash(input.password, 12),
-      isActive: true,
-    },
-    create: {
-      name: input.name,
-      email,
-      passwordHash: await bcrypt.hash(input.password, 12),
-    },
-  });
+  const email = emailValue.trim().toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (!existing && !password) {
+    throw new Error(
+      "SEED_SUPER_ADMIN_PASSWORD é obrigatória ao criar o superadministrador pela primeira vez.",
+    );
+  }
+
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          role: UserRole.SUPER_ADMIN,
+          isActive: true,
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          name,
+          email,
+          passwordHash: await bcrypt.hash(password!, 12),
+          role: UserRole.SUPER_ADMIN,
+        },
+      });
+  await prisma.membership.deleteMany({ where: { userId: user.id } });
+  return true;
+}
+
+async function seedAdmin(clubId: string) {
+  const name = process.env.SEED_ADMIN_NAME;
+  const emailValue = process.env.SEED_ADMIN_EMAIL;
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!name || !emailValue) return;
+
+  const email = emailValue.trim().toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (!existing && (!password || password.length < 12)) {
+    throw new Error(
+      "SEED_ADMIN_PASSWORD com pelo menos 12 caracteres é obrigatória ao criar o administrador pela primeira vez.",
+    );
+  }
+
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          role: UserRole.STANDARD,
+          isActive: true,
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          name,
+          email,
+          passwordHash: await bcrypt.hash(password!, 12),
+          role: UserRole.STANDARD,
+        },
+      });
 
   await prisma.membership.upsert({
-    where: { userId_clubId: { userId: user.id, clubId: input.clubId } },
-    update: { role: input.role, isActive: true },
-    create: { userId: user.id, clubId: input.clubId, role: input.role },
+    where: {
+      userId_clubId: { userId: user.id, clubId },
+    },
+    update: { role: ClubRole.ADMIN, isActive: true },
+    create: {
+      userId: user.id,
+      clubId,
+      role: ClubRole.ADMIN,
+    },
   });
 }
 
 async function main() {
-  for (const club of clubs) {
-    await prisma.club.upsert({
-      where: { id: club.id },
-      update: { name: club.name, slug: club.slug },
-      create: club,
-    });
+  const clubCount = await prisma.club.count();
+  if (clubCount === 0) {
+    await prisma.club.createMany({ data: clubs });
   }
+  const defaultClub = await prisma.club.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!defaultClub) throw new Error("É obrigatório existir pelo menos um clube.");
 
   await prisma.user.deleteMany({
     where: {
@@ -125,29 +179,55 @@ async function main() {
     },
   });
 
-  await seedUser({
-    clubId: clubs[0].id,
-    name: process.env.SEED_ADMIN_NAME,
-    email: process.env.SEED_ADMIN_EMAIL,
-    password: process.env.SEED_ADMIN_PASSWORD,
-    role: ClubRole.ADMIN,
-  });
-  await seedUser({
-    clubId: clubs[0].id,
-    name: process.env.SEED_MEMBER_NAME,
-    email: process.env.SEED_MEMBER_EMAIL,
-    password: process.env.SEED_MEMBER_PASSWORD,
-    role: ClubRole.MEMBER,
-  });
+  await seedSuperAdmin();
+  await seedAdmin(defaultClub.id);
 
   for (const vehicle of vehicles) {
+    const clubExists = await prisma.club.findUnique({
+      where: { id: vehicle.clubId },
+      select: { id: true },
+    });
+    if (!clubExists) continue;
     await prisma.vehicle.upsert({
       where: {
         clubId_plate: { clubId: vehicle.clubId, plate: vehicle.plate },
       },
-      update: vehicle,
+      update: {},
       create: vehicle,
     });
+  }
+
+  let superAdminCount = await prisma.user.count({
+    where: { role: UserRole.SUPER_ADMIN, isActive: true },
+  });
+  if (superAdminCount === 0) {
+    const fallbackAdmin = await prisma.membership.findFirst({
+      where: { role: ClubRole.ADMIN, isActive: true, user: { isActive: true } },
+      orderBy: { createdAt: "asc" },
+      select: { userId: true },
+    });
+
+    if (fallbackAdmin) {
+      await prisma.user.update({
+        where: { id: fallbackAdmin.userId },
+        data: {
+          role: UserRole.SUPER_ADMIN,
+          isActive: true,
+        },
+      });
+      await prisma.membership.deleteMany({
+        where: { userId: fallbackAdmin.userId },
+      });
+      superAdminCount = await prisma.user.count({
+        where: { role: UserRole.SUPER_ADMIN, isActive: true },
+      });
+    }
+  }
+
+  if (superAdminCount === 0) {
+    throw new Error(
+      "É obrigatório configurar um SUPER_ADMIN ativo através das variáveis SEED_SUPER_ADMIN_*.",
+    );
   }
 }
 

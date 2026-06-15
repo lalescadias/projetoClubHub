@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ClubRole } from "@prisma/client";
+import { ClubRole, UserRole } from "@prisma/client";
 import { authorize } from "../../middlewares/authorize.js";
 import { validate } from "../../middlewares/validate.js";
 import { vehicleController } from "./vehicle.controller.js";
@@ -39,7 +39,7 @@ vehicleRoutes.get(
 );
 vehicleRoutes.post(
   "/:id/usages",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({
     params: vehicleIdParamsSchema,
     body: vehicleUsageBodySchema,
@@ -48,7 +48,7 @@ vehicleRoutes.post(
 );
 vehicleRoutes.delete(
   "/:id/usages/:usageId",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({
     params: vehicleUsageParamsSchema,
     body: deleteVehicleUsageBodySchema,
@@ -70,7 +70,7 @@ vehicleRoutes.get(
 );
 vehicleRoutes.post(
   "/:id/revisions",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({
     params: vehicleIdParamsSchema,
     body: vehicleRevisionBodySchema,
@@ -79,7 +79,7 @@ vehicleRoutes.post(
 );
 vehicleRoutes.patch(
   "/:id/revisions/:revisionId",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({
     params: vehicleRevisionParamsSchema,
     body: updateVehicleRevisionBodySchema,
@@ -88,7 +88,7 @@ vehicleRoutes.patch(
 );
 vehicleRoutes.delete(
   "/:id/revisions/:revisionId",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({ params: vehicleRevisionParamsSchema }),
   vehicleController.removeRevision,
 );
@@ -99,19 +99,19 @@ vehicleRoutes.get(
 );
 vehicleRoutes.post(
   "/",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({ body: vehicleBodySchema }),
   vehicleController.create,
 );
 vehicleRoutes.patch(
   "/:id",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({ params: vehicleIdParamsSchema, body: updateVehicleBodySchema }),
   vehicleController.update,
 );
 vehicleRoutes.delete(
   "/:id",
-  authorize(ClubRole.ADMIN),
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
   validate({ params: vehicleIdParamsSchema }),
   vehicleController.remove,
 );

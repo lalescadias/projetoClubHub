@@ -45,7 +45,7 @@ const dateFormatter = new Intl.DateTimeFormat("pt-PT", { timeZone: "UTC" });
 
 export function VehicleDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const { activeMembership } = useAuth();
+  const { activeRole } = useAuth();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [usages, setUsages] = useState<VehicleUsage[]>([]);
   const [revisions, setRevisions] = useState<VehicleRevision[]>([]);
@@ -57,7 +57,8 @@ export function VehicleDetailsPage() {
   const [revisionDetails, setRevisionDetails] =
     useState<VehicleRevision | null>(null);
   const [usageToDelete, setUsageToDelete] = useState<VehicleUsage | null>(null);
-  const canManage = activeMembership?.role === "ADMIN";
+  const canManage =
+    activeRole === "ADMIN" || activeRole === "SUPER_ADMIN";
 
   const load = useCallback(async () => {
     if (!id) return;

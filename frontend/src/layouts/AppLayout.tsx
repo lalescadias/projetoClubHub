@@ -1,5 +1,6 @@
 import {
   Bell,
+  Building2,
   BusFront,
   LayoutDashboard,
   Settings,
@@ -19,13 +20,16 @@ const baseNavigation = [
 ];
 
 export function AppLayout() {
-  const { user, activeMembership, logout } = useAuth();
+  const { user, activeRole, activeClub, logout } = useAuth();
   const { notifications } = useNotifications();
   const navigate = useNavigate();
   const navigation = [
     ...baseNavigation,
-    ...(activeMembership?.role === "ADMIN"
+    ...(activeRole === "ADMIN" || activeRole === "SUPER_ADMIN"
       ? [{ label: "Utilizadores", to: "/users", icon: Users }]
+      : []),
+    ...(activeRole === "SUPER_ADMIN"
+      ? [{ label: "Clubes", to: "/clubs", icon: Building2 }]
       : []),
     { label: "Conta", to: "/account", icon: UserRound },
   ];
@@ -35,7 +39,11 @@ export function AppLayout() {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const roleLabels = { ADMIN: "Administrador", MEMBER: "Membro" };
+  const roleLabels = {
+    SUPER_ADMIN: "Superadministrador",
+    ADMIN: "Administrador",
+    MEMBER: "Membro",
+  };
 
   const signOut = () => {
     logout();
@@ -74,14 +82,14 @@ export function AppLayout() {
         <div className="border-t border-white/8 pt-[18px]">
           <div className="flex items-center gap-2.5 p-[7px]">
             <div className="grid h-[35px] w-[35px] shrink-0 place-items-center rounded-[9px] bg-[#dfeaca] text-xs font-bold text-club-900">
-              {activeMembership?.club.name.slice(0, 2).toUpperCase()}
+              {activeClub?.name.slice(0, 2).toUpperCase() ?? "CH"}
             </div>
             <div className="min-w-0 flex-1">
               <strong className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs text-[#e9f0ec]">
-                {activeMembership?.club.name}
+                {activeClub?.name ?? "Gestão global"}
               </strong>
               <span className="mt-[3px] block text-[10px] text-[#7f9489]">
-                {activeMembership ? roleLabels[activeMembership.role] : ""}
+                {activeRole ? roleLabels[activeRole] : ""}
               </span>
             </div>
           </div>

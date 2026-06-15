@@ -1,13 +1,15 @@
-import type { ClubRole } from "@prisma/client";
+import type { ClubRole, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../config/env.js";
 
+export type AccessRole = ClubRole | Extract<UserRole, "SUPER_ADMIN">;
+
 type AccessTokenPayload = {
   sub: string;
-  clubId: string;
-  membershipId: string;
-  role: ClubRole;
+  clubId?: string;
+  membershipId?: string;
+  role: AccessRole;
 };
 
 export function hashPassword(password: string) {
@@ -20,14 +22,18 @@ export function verifyPassword(password: string, passwordHash: string) {
 
 export function signAccessToken(
   userId: string,
-  membership: { id: string; clubId: string; role: ClubRole },
+  context: {
+    role: AccessRole;
+    clubId?: string;
+    membershipId?: string;
+  },
 ) {
   return jwt.sign(
     {
       sub: userId,
-      clubId: membership.clubId,
-      membershipId: membership.id,
-      role: membership.role,
+      clubId: context.clubId,
+      membershipId: context.membershipId,
+      role: context.role,
     } satisfies AccessTokenPayload,
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN } as SignOptions,
@@ -37,7 +43,7 @@ export function signAccessToken(
 export function verifyAccessToken(token: string) {
   const payload = jwt.verify(token, env.JWT_SECRET) as AccessTokenPayload;
 
-  if (!payload.sub || !payload.clubId || !payload.membershipId || !payload.role) {
+  if (!payload.sub || !payload.role) {
     throw new Error("Invalid token payload");
   }
 

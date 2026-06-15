@@ -14,7 +14,9 @@ export const authController = {
   me: (async (request, response) => {
     const user = await authService.getSession(
       request.auth!.userId,
-      request.auth!.membershipId!,
+      request.auth!.role,
+      request.auth!.membershipId,
+      request.auth!.clubId,
     );
     response.json({ data: user });
   }) satisfies RequestHandler,

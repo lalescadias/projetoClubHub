@@ -23,21 +23,24 @@ import type {
 import { getErrorMessage } from "../services/error.service";
 
 const roleLabels: Record<ClubRole, string> = {
+  SUPER_ADMIN: "Superadministrador",
   ADMIN: "Administrador",
   MEMBER: "Membro",
 };
 
 export function UsersPage() {
-  const { activeMembership, refreshSession } = useAuth();
+  const { user, activeRole, activeClub, refreshSession } = useAuth();
   const [users, setUsers] = useState<ClubUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [userToEdit, setUserToEdit] = useState<ClubUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<ClubUser | null>(null);
+  const canAccess = activeRole === "ADMIN" || activeRole === "SUPER_ADMIN";
+  const isSuperAdmin = activeRole === "SUPER_ADMIN";
 
   const load = useCallback(async () => {
-    if (activeMembership?.role !== "ADMIN") return;
+    if (!canAccess || !activeClub) return;
     try {
       setLoading(true);
       setError(null);
@@ -47,11 +50,11 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeMembership?.club.id, activeMembership?.role]);
+  }, [activeClub, canAccess]);
 
   useEffect(() => void load(), [load]);
 
-  if (activeMembership?.role !== "ADMIN") {
+  if (!canAccess) {
     return (
       <div className="rounded-xl border border-[#efcaca] bg-white p-8 text-center">
         <ShieldCheck className="mx-auto mb-3 text-[#b84b4b]" />
@@ -63,31 +66,43 @@ export function UsersPage() {
     );
   }
 
+  if (!activeClub) {
+    return (
+      <div className="rounded-xl border border-[#ecd9ac] bg-white p-8 text-center text-sm text-[#8a641d]">
+        Entre novamente indicando o código do clube que pretende administrar.
+      </div>
+    );
+  }
+
+  const activeSuperAdminCount = users.filter(
+    (membership) =>
+      membership.role === "SUPER_ADMIN" && membership.isActive,
+  ).length;
+
   const create = async (payload: CreateClubUserPayload) => {
     await userApi.create(payload);
     await load();
   };
 
   const update = async (
-    membership: ClubUser,
+    target: ClubUser,
     payload: UpdateClubUserPayload,
   ) => {
-    await userApi.update(membership.id, payload);
-    if (membership.id === activeMembership.id) {
-      await refreshSession();
-    }
+    await userApi.update(target.id, payload);
+    if (target.user.id === user?.id) await refreshSession();
     await load();
   };
 
   const updateAccess = async (
-    membership: ClubUser,
+    target: ClubUser,
     payload: UpdateClubUserPayload,
   ) => {
     try {
       setError(null);
-      await update(membership, payload);
+      await update(target, payload);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+      await load();
     }
   };
 
@@ -102,7 +117,7 @@ export function UsersPage() {
       <PageHeader
         eyebrow="Administração"
         title="Utilizadores"
-        description={`Controle quem pode aceder aos dados de ${activeMembership.club.name}.`}
+        description={`Controle quem pode aceder aos dados de ${activeClub.name}.`}
         actions={
           <button
             className="inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-club-800 px-4 text-xs font-bold text-white max-sm:w-full max-sm:justify-center"
@@ -125,15 +140,26 @@ export function UsersPage() {
               </div>
             )}
             <div className="divide-y divide-[#edf0ed]">
-              {users.map((membership) => {
-                const isCurrentUser = membership.id === activeMembership.id;
+              {users.map((target) => {
+                const isCurrentUser = target.user.id === user?.id;
+                const protectedRole =
+                  target.role === "SUPER_ADMIN" || target.role === "ADMIN";
+                const canManageTarget = isSuperAdmin || !protectedRole;
+                const lastSuperAdmin =
+                  target.role === "SUPER_ADMIN" &&
+                  target.isActive &&
+                  activeSuperAdminCount <= 1;
+                const roleOptions = isSuperAdmin
+                  ? Object.entries(roleLabels)
+                  : [["MEMBER", roleLabels.MEMBER]];
+
                 return (
                   <article
                     className="flex items-center gap-4 p-5 max-lg:flex-wrap"
-                    key={membership.id}
+                    key={`${target.role}-${target.id}`}
                   >
                     <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-club-100 font-display text-sm text-club-800">
-                      {membership.user.name
+                      {target.user.name
                         .split(" ")
                         .map((part) => part[0])
                         .slice(0, 2)
@@ -142,7 +168,7 @@ export function UsersPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <strong className="block truncate text-sm text-[#28362f]">
-                          {membership.user.name}
+                          {target.user.name}
                         </strong>
                         {isCurrentUser && (
                           <span className="rounded-full bg-club-100 px-2 py-0.5 text-[9px] font-bold uppercase text-club-700">
@@ -151,49 +177,54 @@ export function UsersPage() {
                         )}
                       </div>
                       <span className="mt-1 block truncate text-xs text-[#7d8981]">
-                        {membership.user.email}
+                        {target.user.email}
                       </span>
                     </div>
                     <select
-                      className="h-10 rounded-lg border border-[#d9e0da] bg-white px-3 text-xs max-lg:order-4 max-lg:flex-1"
-                      value={membership.role}
+                      className="h-10 rounded-lg border border-[#d9e0da] bg-white px-3 text-xs disabled:bg-[#f4f6f4] disabled:text-[#8b958f] max-lg:order-4 max-lg:flex-1"
+                      value={target.role}
+                      disabled={!isSuperAdmin || lastSuperAdmin}
                       onChange={(event) =>
-                        void updateAccess(membership, {
+                        void updateAccess(target, {
                           role: event.target.value as ClubRole,
                         })
                       }
                     >
-                      {Object.entries(roleLabels).map(([value, label]) => (
+                      {roleOptions.map(([value, label]) => (
                         <option key={value} value={value}>
                           {label}
                         </option>
                       ))}
                     </select>
                     <button
-                      className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold max-lg:order-5 ${
-                        membership.isActive
+                      className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 max-lg:order-5 ${
+                        target.isActive
                           ? "bg-[#e9f5ed] text-[#287a50]"
                           : "bg-[#fceaea] text-[#aa4747]"
                       }`}
+                      disabled={
+                        !canManageTarget || isCurrentUser || lastSuperAdmin
+                      }
                       onClick={() =>
-                        void updateAccess(membership, {
-                          isActive: !membership.isActive,
+                        void updateAccess(target, {
+                          isActive: !target.isActive,
                         })
                       }
                       type="button"
                     >
-                      {membership.isActive ? (
+                      {target.isActive ? (
                         <UserCheck size={16} />
                       ) : (
                         <UserX size={16} />
                       )}
-                      {membership.isActive ? "Ativo" : "Inativo"}
+                      {target.isActive ? "Ativo" : "Inativo"}
                     </button>
                     <div className="flex gap-2 max-lg:order-6">
                       <button
-                        className="grid h-10 w-10 place-items-center rounded-lg border border-[#d9e0da] text-club-700 hover:bg-club-100"
+                        className="grid h-10 w-10 place-items-center rounded-lg border border-[#d9e0da] text-club-700 hover:bg-club-100 disabled:cursor-not-allowed disabled:opacity-35"
                         type="button"
-                        onClick={() => setUserToEdit(membership)}
+                        disabled={!canManageTarget}
+                        onClick={() => setUserToEdit(target)}
                         aria-label="Editar utilizador"
                         title="Editar utilizador"
                       >
@@ -202,18 +233,12 @@ export function UsersPage() {
                       <button
                         className="grid h-10 w-10 place-items-center rounded-lg border border-[#efcece] text-[#b84b4b] hover:bg-[#fceaea] disabled:cursor-not-allowed disabled:opacity-35"
                         type="button"
-                        disabled={isCurrentUser}
-                        onClick={() => setUserToDelete(membership)}
-                        aria-label={
-                          isCurrentUser
-                            ? "Não pode apagar a sua própria inscrição"
-                            : "Apagar utilizador"
+                        disabled={
+                          !canManageTarget || isCurrentUser || lastSuperAdmin
                         }
-                        title={
-                          isCurrentUser
-                            ? "Não pode apagar a sua própria inscrição"
-                            : "Apagar utilizador"
-                        }
+                        onClick={() => setUserToDelete(target)}
+                        aria-label="Apagar utilizador"
+                        title="Apagar utilizador"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -230,6 +255,7 @@ export function UsersPage() {
         <UserFormModal
           onClose={() => setShowForm(false)}
           onSubmit={create}
+          canCreateAdministrators={isSuperAdmin}
         />
       )}
       {userToEdit && (

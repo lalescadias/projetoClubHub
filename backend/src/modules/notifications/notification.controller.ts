@@ -5,7 +5,7 @@ export const notificationController = {
   list: (async (request, response) => {
     const notifications = await notificationService.listByClub(
       request.auth!.clubId!,
-      request.auth!.membershipId!,
+      request.auth!.userId,
     );
     response.json({ data: notifications });
   }) satisfies RequestHandler,
@@ -13,7 +13,7 @@ export const notificationController = {
   dismiss: (async (request, response) => {
     await notificationService.dismiss(
       request.auth!.clubId!,
-      request.auth!.membershipId!,
+      request.auth!.userId,
       request.params.notificationId as string,
     );
     response.status(204).send();

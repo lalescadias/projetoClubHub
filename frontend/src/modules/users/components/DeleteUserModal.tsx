@@ -62,8 +62,11 @@ export function DeleteUserModal({
             Apagar utilizador?
           </h2>
           <p className="mb-4 text-xs leading-5 text-[#6e7c74]">
-            <strong>{membership.user.name}</strong> deixará de ter acesso a este
-            clube. Esta operação não pode ser anulada.
+            <strong>{membership.user.name}</strong>{" "}
+            {membership.role === "SUPER_ADMIN"
+              ? "será removido globalmente da plataforma."
+              : "deixará de ter acesso a este clube."}{" "}
+            Esta operação não pode ser anulada.
           </p>
           <label className="grid gap-2 text-xs font-bold text-[#4f5d55]">
             Para confirmar, escreva{" "}
