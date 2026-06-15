@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VehicleType {
+  CAR
+  VAN
+  BUS
+  MOTORCYCLE
+  OTHER
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  UNAVAILABLE
+}
+
+enum ClubRole {
+  ADMIN
+  MEMBER
+}
+
+model Club {
+  id          String       @id @default(uuid())
+  name        String       @db.VarChar(120)
+  slug        String       @unique @db.VarChar(80)
+  memberships Membership[]
+  vehicles    Vehicle[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String       @db.VarChar(120)
+  email        String       @unique @db.VarChar(180)
+  passwordHash String
+  isActive     Boolean      @default(true)
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  role      ClubRole @default(MEMBER)
+  isActive  Boolean  @default(true)
+  userId    String
+  clubId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, clubId])
+  @@index([clubId, isActive])
+}
+
+model Vehicle {
+  id              String        @id @default(uuid())
+  plate           String        @db.VarChar(20)
+  make            String        @db.VarChar(80)
+  model           String        @db.VarChar(80)
+  year            Int
+  mileage         Int           @default(0)
+  type            VehicleType
+  status          VehicleStatus @default(ACTIVE)
+  inspectionDate  DateTime?     @db.Date
+  insuranceDate   DateTime?     @db.Date
+  notes           String?       @db.Text
+  clubId          String
+  club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([clubId, plate])
+  @@index([clubId, status])
+  @@index([clubId, make, model])
+}

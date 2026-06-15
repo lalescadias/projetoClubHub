@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Manrope", sans-serif;
+  --color-club-950: #10271e;
+  --color-club-900: #173629;
+  --color-club-800: #1d4635;
+  --color-club-600: #2b7a56;
+  --color-club-500: #3c9369;
+  --color-club-100: #e7f3ec;
+}
+
+@layer base {
+  body {
+    @apply m-0 min-w-80 bg-[#f4f6f3] font-sans text-[#1e2b25] antialiased;
+  }
+
+  button,
+  summary,
+  select {
+    @apply cursor-pointer;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed opacity-55;
+  }
+}
