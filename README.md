@@ -73,9 +73,8 @@ No Adminer, use:
 
 - Sistema: `PostgreSQL`
 - Servidor: `postgres`
-- Utilizador: `clubhub`
-- Palavra-passe: `clubhub_password`
-- Base de dados: `clubhub`
+- Utilizador, palavra-passe e base de dados: use os valores definidos no seu
+  ficheiro `.env` local.
 
 O container do backend executa as migrações e o seed automaticamente. Para parar:
 
@@ -83,15 +82,9 @@ O container do backend executa as migrações e o seed automaticamente. Para par
 docker compose down
 ```
 
-Contas de demonstração criadas pelo seed:
-
-| Perfil | Email | Palavra-passe |
-| --- | --- | --- |
-| Admin do Atlético (`atletico-clube`) | `admin@clubhub.pt` | `ClubHub2026!` |
-| Membro do Atlético (`atletico-clube`) | `membro@clubhub.pt` | `ClubHub2026!` |
-| Admin do Sporting (`sporting-da-vila`) | `admin.vila@clubhub.pt` | `ClubHub2026!` |
-
-Estas credenciais destinam-se apenas a desenvolvimento local.
+O seed pode criar o primeiro administrador e um membro através das variáveis
+`SEED_ADMIN_*` e `SEED_MEMBER_*` do `.env` local. Nenhuma credencial é guardada
+no código ou na documentação.
 
 Para remover também os dados locais:
 
@@ -147,14 +140,16 @@ npm run install:all
 docker compose up -d postgres
 ```
 
-O ficheiro `backend/.env` já aponta para o PostgreSQL local:
+Crie os ficheiros locais a partir dos exemplos e preencha valores próprios:
 
-```env
-DATABASE_URL=postgresql://clubhub:clubhub_password@localhost:5432/clubhub?schema=public
-PORT=3333
-FRONTEND_URL=http://localhost:5173
-NODE_ENV=development
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
+
+Nunca faça commit dos ficheiros `.env`. Use palavras-passe únicas e gere
+`JWT_SECRET` com pelo menos 32 bytes aleatórios.
 
 ### 5. Preparar a base de dados
 

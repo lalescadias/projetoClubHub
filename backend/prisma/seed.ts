@@ -7,7 +7,6 @@ import {
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
-const defaultPassword = "ClubHub2026!";
 
 const clubs = [
   {
@@ -64,6 +63,41 @@ const vehicles = [
   },
 ];
 
+async function seedUser(input: {
+  clubId: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  role: ClubRole;
+}) {
+  if (!input.name || !input.email || !input.password) return;
+
+  if (input.password.length < 12) {
+    throw new Error("As palavras-passe de bootstrap devem ter pelo menos 12 caracteres.");
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {
+      name: input.name,
+      passwordHash: await bcrypt.hash(input.password, 12),
+      isActive: true,
+    },
+    create: {
+      name: input.name,
+      email,
+      passwordHash: await bcrypt.hash(input.password, 12),
+    },
+  });
+
+  await prisma.membership.upsert({
+    where: { userId_clubId: { userId: user.id, clubId: input.clubId } },
+    update: { role: input.role, isActive: true },
+    create: { userId: user.id, clubId: input.clubId, role: input.role },
+  });
+}
+
 async function main() {
   for (const club of clubs) {
     await prisma.club.upsert({
@@ -73,60 +107,31 @@ async function main() {
     });
   }
 
-  const passwordHash = await bcrypt.hash(defaultPassword, 12);
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@clubhub.pt" },
-    update: { name: "Nuno Silva", passwordHash, isActive: true },
-    create: {
-      name: "Nuno Silva",
-      email: "admin@clubhub.pt",
-      passwordHash,
-    },
-  });
-  const member = await prisma.user.upsert({
-    where: { email: "membro@clubhub.pt" },
-    update: { name: "Maria Costa", passwordHash, isActive: true },
-    create: {
-      name: "Maria Costa",
-      email: "membro@clubhub.pt",
-      passwordHash,
-    },
-  });
-  const secondAdmin = await prisma.user.upsert({
-    where: { email: "admin.vila@clubhub.pt" },
-    update: { name: "João Martins", passwordHash, isActive: true },
-    create: {
-      name: "João Martins",
-      email: "admin.vila@clubhub.pt",
-      passwordHash,
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [
+          "admin@clubhub.pt",
+          "membro@clubhub.pt",
+          "admin.vila@clubhub.pt",
+        ],
+      },
     },
   });
 
-  await prisma.membership.upsert({
-    where: { userId_clubId: { userId: admin.id, clubId: clubs[0].id } },
-    update: { role: ClubRole.ADMIN, isActive: true },
-    create: { userId: admin.id, clubId: clubs[0].id, role: ClubRole.ADMIN },
+  await seedUser({
+    clubId: clubs[0].id,
+    name: process.env.SEED_ADMIN_NAME,
+    email: process.env.SEED_ADMIN_EMAIL,
+    password: process.env.SEED_ADMIN_PASSWORD,
+    role: ClubRole.ADMIN,
   });
-  await prisma.membership.deleteMany({
-    where: { userId: admin.id, clubId: clubs[1].id },
-  });
-  await prisma.membership.upsert({
-    where: { userId_clubId: { userId: secondAdmin.id, clubId: clubs[1].id } },
-    update: { role: ClubRole.ADMIN, isActive: true },
-    create: {
-      userId: secondAdmin.id,
-      clubId: clubs[1].id,
-      role: ClubRole.ADMIN,
-    },
-  });
-  await prisma.membership.upsert({
-    where: { userId_clubId: { userId: member.id, clubId: clubs[0].id } },
-    update: { role: ClubRole.MEMBER, isActive: true },
-    create: {
-      userId: member.id,
-      clubId: clubs[0].id,
-      role: ClubRole.MEMBER,
-    },
+  await seedUser({
+    clubId: clubs[0].id,
+    name: process.env.SEED_MEMBER_NAME,
+    email: process.env.SEED_MEMBER_EMAIL,
+    password: process.env.SEED_MEMBER_PASSWORD,
+    role: ClubRole.MEMBER,
   });
 
   for (const vehicle of vehicles) {
