@@ -8,7 +8,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Brand } from "../components/Brand";
 import { useAuth } from "../modules/auth/context/AuthContext";
 import { useNotifications } from "../modules/notifications/hooks/useNotifications";
@@ -53,7 +53,13 @@ export function AppLayout() {
   return (
     <div className="min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-20 flex w-[250px] flex-col bg-club-950 px-[18px] pb-5 pt-7 text-[#dfeae4] max-md:hidden">
-        <Brand />
+        <Link
+          className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-club-500"
+          to="/"
+          aria-label="Ir para a visão geral"
+        >
+          <Brand />
+        </Link>
 
         <nav className="mt-12 flex flex-1 flex-col gap-1" aria-label="Navegação principal">
           <span className="px-[13px] pb-[9px] text-[10px] font-bold uppercase tracking-[1.6px] text-[#71877c]">
@@ -98,10 +104,14 @@ export function AppLayout() {
 
       <div className="min-h-screen md:ml-[250px]">
         <header className="flex h-[70px] items-center justify-end border-b border-[#dde4de] bg-white/85 px-[42px] backdrop-blur-md max-md:h-[62px] max-md:justify-between max-md:px-[18px]">
-          <div className="hidden items-center gap-[5px] max-md:flex">
+          <Link
+            className="hidden items-center gap-[5px] rounded-lg max-md:flex"
+            to="/"
+            aria-label="Ir para a visão geral"
+          >
             <Brand compact />
             <strong className="font-display text-base text-club-950">ClubHub</strong>
-          </div>
+          </Link>
           <div className="flex items-center gap-[9px]">
             <button
               className="relative grid h-[37px] w-[37px] place-items-center rounded-[9px] border border-[#dde4de] bg-white text-[#536159] hover:border-[#c4d0c7] hover:bg-[#f7f9f7] hover:text-club-800"
