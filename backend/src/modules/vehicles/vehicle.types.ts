@@ -46,3 +46,22 @@ export type VehicleUsageFilters = {
   page: number;
   limit: number;
 };
+
+export type CreateVehicleRevisionInput = {
+  revisionDate: string;
+  mileage: number;
+  description: string;
+  servicesPerformed: string;
+  workshop?: string | null;
+  cost?: number | null;
+  nextRevisionDate?: string | null;
+  nextRevisionMileage?: number | null;
+  notes?: string | null;
+};
+
+export type UpdateVehicleRevisionInput = Partial<CreateVehicleRevisionInput>;
+
+export type VehicleRevisionFilters = {
+  page: number;
+  limit: number;
+};

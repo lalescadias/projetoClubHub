@@ -1,10 +1,13 @@
 import type { RequestHandler } from "express";
 import type {
+  CreateVehicleRevisionInput,
   CreateVehicleUsageInput,
   CreateVehicleInput,
   UpdateVehicleInput,
   VehicleFilters,
   VehicleUsageFilters,
+  UpdateVehicleRevisionInput,
+  VehicleRevisionFilters,
 } from "./vehicle.types.js";
 import { vehicleService } from "./vehicle.service.js";
 
@@ -77,6 +80,52 @@ export class VehicleController {
       request.params.usageId as string,
     );
     response.json({ data: result });
+  };
+
+  listRevisions: RequestHandler = async (request, response) => {
+    const result = await vehicleService.listRevisions(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.query as unknown as VehicleRevisionFilters,
+    );
+    response.json(result);
+  };
+
+  getRevision: RequestHandler = async (request, response) => {
+    const revision = await vehicleService.getRevision(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.params.revisionId as string,
+    );
+    response.json({ data: revision });
+  };
+
+  createRevision: RequestHandler = async (request, response) => {
+    const revision = await vehicleService.createRevision(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.body as CreateVehicleRevisionInput,
+    );
+    response.status(201).json({ data: revision });
+  };
+
+  updateRevision: RequestHandler = async (request, response) => {
+    const revision = await vehicleService.updateRevision(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.params.revisionId as string,
+      request.body as UpdateVehicleRevisionInput,
+    );
+    response.json({ data: revision });
+  };
+
+  removeRevision: RequestHandler = async (request, response) => {
+    await vehicleService.removeRevision(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.params.revisionId as string,
+    );
+    response.status(204).send();
   };
 }
 

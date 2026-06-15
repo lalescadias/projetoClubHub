@@ -1,4 +1,8 @@
-export type NotificationType = "INSPECTION" | "INSURANCE";
+export type NotificationType =
+  | "INSPECTION"
+  | "INSURANCE"
+  | "REVISION_DATE"
+  | "REVISION_MILEAGE";
 export type NotificationSeverity = "INFO" | "WARNING" | "URGENT";
 
 export type Notification = {
@@ -11,6 +15,9 @@ export type Notification = {
   plate: string;
   make: string;
   model: string;
-  dueDate: string;
-  daysRemaining: number;
+  dueDate: string | null;
+  daysRemaining: number | null;
+  dueMileage: number | null;
+  currentMileage: number | null;
+  kilometersRemaining: number | null;
 };

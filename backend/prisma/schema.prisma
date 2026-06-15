@@ -88,12 +88,32 @@ model Vehicle {
   clubId          String
   club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
   usages          VehicleUsage[]
+  revisions       VehicleRevision[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   @@unique([clubId, plate])
   @@index([clubId, status])
   @@index([clubId, make, model])
+}
+
+model VehicleRevision {
+  id                      String   @id @default(uuid())
+  vehicleId               String
+  vehicle                 Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  revisionDate            DateTime @db.Date
+  mileage                 Int
+  description             String   @db.VarChar(240)
+  servicesPerformed       String   @db.Text
+  workshop                String?  @db.VarChar(160)
+  cost                    Decimal? @db.Decimal(12, 2)
+  nextRevisionDate        DateTime? @db.Date
+  nextRevisionMileage     Int?
+  notes                   String?  @db.Text
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([vehicleId, revisionDate])
 }
 
 model VehicleUsage {

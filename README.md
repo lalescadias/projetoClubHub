@@ -209,6 +209,11 @@ Base URL: `http://localhost:3333/api`
 | `GET` | `/vehicles/:id/usages` | Histórico paginado de utilizações |
 | `POST` | `/vehicles/:id/usages` | Regista utilização e atualiza quilometragem |
 | `DELETE` | `/vehicles/:id/usages/:usageId` | Apaga a última utilização e repõe quilometragem |
+| `GET` | `/vehicles/:id/revisions` | Histórico paginado de revisões |
+| `GET` | `/vehicles/:id/revisions/:revisionId` | Detalhe de uma revisão |
+| `POST` | `/vehicles/:id/revisions` | Regista uma revisão, apenas admin |
+| `PATCH` | `/vehicles/:id/revisions/:revisionId` | Edita uma revisão, apenas admin |
+| `DELETE` | `/vehicles/:id/revisions/:revisionId` | Remove uma revisão, apenas admin |
 | `GET` | `/users` | Lista utilizadores do clube, apenas admin |
 | `POST` | `/users` | Adiciona utilizador ao clube, apenas admin |
 | `PATCH` | `/users/:membershipId` | Altera função ou estado, apenas admin |
@@ -270,6 +275,21 @@ indisponível. Após a criação, `currentMileage` é atualizada automaticamente
 A eliminação exige corpo `{ "confirmation": "delete" }` e só é permitida para a
 utilização mais recente. A quilometragem atual é restaurada para `startMileage`
 na mesma transação.
+
+### Revisões e notificações
+
+Cada revisão guarda a data, quilometragem, descrição, serviços realizados,
+oficina, custo e a previsão da revisão seguinte por data e/ou quilometragem.
+
+O endpoint `GET /notifications` também gera avisos dinâmicos para a revisão mais
+recente de cada viatura:
+
+- próxima revisão por data quando faltam até 30 dias;
+- revisão por data vencida quando a data já passou;
+- próxima revisão por quilometragem quando faltam até 500 km ou o valor previsto
+  foi atingido;
+- revisão por quilometragem vencida quando a quilometragem prevista foi
+  ultrapassada.
 
 ## Scripts úteis
 

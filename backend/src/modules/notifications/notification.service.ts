@@ -16,7 +16,7 @@ function getDaysRemaining(dueDate: Date, today: Date) {
 }
 
 function getSeverity(daysRemaining: number): NotificationSeverity | null {
-  if (daysRemaining <= 0) return "URGENT";
+  if (daysRemaining < 0) return "URGENT";
   if (daysRemaining <= 15) return "WARNING";
   if (daysRemaining <= 30) return "INFO";
   return null;
@@ -37,7 +37,12 @@ function createNotification(
   const severity = getSeverity(daysRemaining);
   if (!severity) return null;
 
-  const subject = type === "INSPECTION" ? "Inspeção" : "Seguro";
+  const subject =
+    type === "INSPECTION"
+      ? "Inspeção"
+      : type === "INSURANCE"
+        ? "Seguro"
+        : "Revisão";
   const subjectLower = subject.toLowerCase();
   let title: string;
   let message: string;
@@ -66,20 +71,56 @@ function createNotification(
     model: vehicle.model,
     dueDate: dueDate.toISOString().slice(0, 10),
     daysRemaining,
+    dueMileage: null,
+    currentMileage: null,
+    kilometersRemaining: null,
+  };
+}
+
+function createRevisionMileageNotification(
+  vehicle: {
+    id: string;
+    plate: string;
+    make: string;
+    model: string;
+    currentMileage: number;
+  },
+  dueMileage: number,
+): VehicleNotification | null {
+  const kilometersRemaining = dueMileage - vehicle.currentMileage;
+  if (kilometersRemaining > 500) return null;
+
+  const overdue = kilometersRemaining < 0;
+  const exceededBy = Math.abs(kilometersRemaining);
+
+  return {
+    id: `revision-mileage-${vehicle.id}`,
+    type: "REVISION_MILEAGE",
+    severity: overdue ? "URGENT" : "WARNING",
+    title: overdue
+      ? "Revisão por quilometragem vencida"
+      : "Revisão por quilometragem próxima",
+    message: overdue
+      ? `A viatura ${vehicle.plate} ultrapassou a revisão prevista por ${exceededBy} km.`
+      : kilometersRemaining === 0
+        ? `A viatura ${vehicle.plate} atingiu a quilometragem prevista para a revisão.`
+        : `A viatura ${vehicle.plate} tem revisão prevista dentro de ${kilometersRemaining} km.`,
+    vehicleId: vehicle.id,
+    plate: vehicle.plate,
+    make: vehicle.make,
+    model: vehicle.model,
+    dueDate: null,
+    daysRemaining: null,
+    dueMileage,
+    currentMileage: vehicle.currentMileage,
+    kilometersRemaining,
   };
 }
 
 export class NotificationService {
   async listByClub(clubId: string, today = new Date()) {
-    const limitDate = new Date(startOfUtcDay(today) + 30 * DAY_IN_MS);
     const vehicles = await prisma.vehicle.findMany({
-      where: {
-        clubId,
-        OR: [
-          { inspectionDate: { lte: limitDate } },
-          { insuranceDate: { lte: limitDate } },
-        ],
-      },
+      where: { clubId },
       select: {
         id: true,
         plate: true,
@@ -87,6 +128,16 @@ export class NotificationService {
         model: true,
         inspectionDate: true,
         insuranceDate: true,
+        currentMileage: true,
+        revisions: {
+          orderBy: [{ revisionDate: "desc" }, { createdAt: "desc" }],
+          take: 1,
+          select: {
+            id: true,
+            nextRevisionDate: true,
+            nextRevisionMileage: true,
+          },
+        },
       },
     });
 
@@ -110,6 +161,37 @@ export class NotificationService {
         );
         if (notification) items.push(notification);
       }
+      const latestRevision = vehicle.revisions[0];
+      if (latestRevision?.nextRevisionDate) {
+        const notification = createNotification(
+          vehicle,
+          "REVISION_DATE",
+          latestRevision.nextRevisionDate,
+          today,
+        );
+        if (notification) {
+          notification.id = `revision-date-${vehicle.id}`;
+          notification.title =
+            notification.daysRemaining! < 0
+              ? "Revisão vencida"
+              : notification.daysRemaining === 0
+                ? "Revisão prevista para hoje"
+                : "Revisão próxima";
+          notification.message = buildRevisionDateMessage(
+            vehicle.plate,
+            notification.daysRemaining!,
+          );
+          items.push(notification);
+        }
+      }
+      if (latestRevision?.nextRevisionMileage !== null &&
+          latestRevision?.nextRevisionMileage !== undefined) {
+        const notification = createRevisionMileageNotification(
+          vehicle,
+          latestRevision.nextRevisionMileage,
+        );
+        if (notification) items.push(notification);
+      }
       return items;
     });
 
@@ -122,10 +204,22 @@ export class NotificationService {
     return notifications.sort(
       (left, right) =>
         severityOrder[left.severity] - severityOrder[right.severity] ||
-        left.daysRemaining - right.daysRemaining ||
+        (left.daysRemaining ?? left.kilometersRemaining ?? 0) -
+          (right.daysRemaining ?? right.kilometersRemaining ?? 0) ||
         left.plate.localeCompare(right.plate),
     );
   }
+}
+
+function buildRevisionDateMessage(plate: string, daysRemaining: number) {
+  if (daysRemaining < 0) {
+    const days = Math.abs(daysRemaining);
+    return `A viatura ${plate} está com a revisão vencida há ${days} ${days === 1 ? "dia" : "dias"}.`;
+  }
+  if (daysRemaining === 0) {
+    return `A viatura ${plate} tem revisão prevista para hoje.`;
+  }
+  return `A viatura ${plate} tem revisão prevista dentro de ${daysRemaining} ${daysRemaining === 1 ? "dia" : "dias"}.`;
 }
 
 export const notificationService = new NotificationService();

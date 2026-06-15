@@ -38,6 +38,10 @@ export const vehicleUsageParamsSchema = vehicleIdParamsSchema.extend({
   usageId: z.string().uuid("Identificador de utilização inválido."),
 });
 
+export const vehicleRevisionParamsSchema = vehicleIdParamsSchema.extend({
+  revisionId: z.string().uuid("Identificador de revisão inválido."),
+});
+
 export const vehicleListQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
   status: z.nativeEnum(VehicleStatus).optional(),
@@ -70,4 +74,23 @@ export const deleteVehicleUsageBodySchema = z.object({
   confirmation: z.literal("delete", {
     errorMap: () => ({ message: 'Escreva "delete" para confirmar a eliminação.' }),
   }),
+});
+
+export const vehicleRevisionBodySchema = z.object({
+  revisionDate: z.string().date("A data deve estar no formato AAAA-MM-DD."),
+  mileage: z.coerce.number().int().min(0),
+  description: z.string().trim().min(2).max(240),
+  servicesPerformed: z.string().trim().min(2).max(5000),
+  workshop: z.string().trim().max(160).nullable().optional(),
+  cost: z.coerce.number().nonnegative().max(10000000).nullable().optional(),
+  nextRevisionDate: optionalDate,
+  nextRevisionMileage: z.coerce.number().int().min(0).nullable().optional(),
+  notes: z.string().trim().max(5000).nullable().optional(),
+});
+
+export const updateVehicleRevisionBodySchema = vehicleRevisionBodySchema.partial();
+
+export const vehicleRevisionListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
 });

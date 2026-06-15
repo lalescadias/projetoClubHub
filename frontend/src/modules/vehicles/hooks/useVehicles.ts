@@ -6,6 +6,7 @@ import type {
   VehicleListParams,
   VehiclePayload,
 } from "../types/vehicle";
+import { refreshNotifications } from "../../notifications/hooks/useNotifications";
 
 export function useVehicles(params: VehicleListParams) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -36,16 +37,19 @@ export function useVehicles(params: VehicleListParams) {
   const createVehicle = async (payload: VehiclePayload) => {
     await vehicleApi.create(payload);
     await loadVehicles();
+    refreshNotifications();
   };
 
   const updateVehicle = async (id: string, payload: VehiclePayload) => {
     await vehicleApi.update(id, payload);
     await loadVehicles();
+    refreshNotifications();
   };
 
   const removeVehicle = async (id: string) => {
     await vehicleApi.remove(id);
     await loadVehicles();
+    refreshNotifications();
   };
 
   return {

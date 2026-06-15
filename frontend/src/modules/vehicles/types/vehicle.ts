@@ -71,6 +71,34 @@ export type VehicleUsagePayload = {
   notes?: string | null;
 };
 
+export type VehicleRevision = {
+  id: string;
+  vehicleId: string;
+  revisionDate: string;
+  mileage: number;
+  description: string;
+  servicesPerformed: string;
+  workshop: string | null;
+  cost: number | null;
+  nextRevisionDate: string | null;
+  nextRevisionMileage: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VehicleRevisionPayload = {
+  revisionDate: string;
+  mileage: number;
+  description: string;
+  servicesPerformed: string;
+  workshop?: string | null;
+  cost?: number | null;
+  nextRevisionDate?: string | null;
+  nextRevisionMileage?: number | null;
+  notes?: string | null;
+};
+
 export type VehicleDashboard = {
   total: number;
   active: number;

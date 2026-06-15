@@ -2,11 +2,14 @@ import type { Prisma } from "@prisma/client";
 import { AppError } from "../../errors/app-error.js";
 import { prisma } from "../../lib/prisma.js";
 import type {
+  CreateVehicleRevisionInput,
   CreateVehicleUsageInput,
   CreateVehicleInput,
   UpdateVehicleInput,
   VehicleFilters,
   VehicleUsageFilters,
+  UpdateVehicleRevisionInput,
+  VehicleRevisionFilters,
 } from "./vehicle.types.js";
 
 function normalizeDates<T extends CreateVehicleInput | UpdateVehicleInput>(data: T) {
@@ -28,6 +31,35 @@ function serializeUsage<T extends { fuelAmount: unknown; fuelCost: unknown }>(us
     ...usage,
     fuelAmount: usage.fuelAmount === null ? null : Number(usage.fuelAmount),
     fuelCost: usage.fuelCost === null ? null : Number(usage.fuelCost),
+  };
+}
+
+function serializeRevision<T extends { cost: unknown }>(revision: T) {
+  return {
+    ...revision,
+    cost: revision.cost === null ? null : Number(revision.cost),
+  };
+}
+
+function normalizeRevision(
+  data: CreateVehicleRevisionInput | UpdateVehicleRevisionInput,
+) {
+  return {
+    ...data,
+    ...(data.revisionDate !== undefined && {
+      revisionDate: new Date(data.revisionDate),
+    }),
+    ...(data.nextRevisionDate !== undefined && {
+      nextRevisionDate: data.nextRevisionDate
+        ? new Date(data.nextRevisionDate)
+        : null,
+    }),
+    ...(data.workshop !== undefined && { workshop: data.workshop || null }),
+    ...(data.cost !== undefined && { cost: data.cost ?? null }),
+    ...(data.nextRevisionMileage !== undefined && {
+      nextRevisionMileage: data.nextRevisionMileage ?? null,
+    }),
+    ...(data.notes !== undefined && { notes: data.notes || null }),
   };
 }
 
@@ -255,6 +287,89 @@ export class VehicleService {
 
       return { currentMileage: usage.startMileage };
     });
+  }
+
+  async listRevisions(
+    clubId: string,
+    vehicleId: string,
+    filters: VehicleRevisionFilters,
+  ) {
+    await this.getById(clubId, vehicleId);
+    const { page, limit } = filters;
+
+    const [items, total] = await prisma.$transaction([
+      prisma.vehicleRevision.findMany({
+        where: { vehicleId, vehicle: { clubId } },
+        orderBy: [{ revisionDate: "desc" }, { createdAt: "desc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.vehicleRevision.count({
+        where: { vehicleId, vehicle: { clubId } },
+      }),
+    ]);
+
+    return {
+      data: items.map(serializeRevision),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
+  }
+
+  async getRevision(clubId: string, vehicleId: string, revisionId: string) {
+    const revision = await prisma.vehicleRevision.findFirst({
+      where: { id: revisionId, vehicleId, vehicle: { clubId } },
+    });
+    if (!revision) throw new AppError("Revisão não encontrada.", 404);
+    return serializeRevision(revision);
+  }
+
+  async createRevision(
+    clubId: string,
+    vehicleId: string,
+    input: CreateVehicleRevisionInput,
+  ) {
+    await this.getById(clubId, vehicleId);
+    const revision = await prisma.vehicleRevision.create({
+      data: {
+        vehicleId,
+        revisionDate: new Date(input.revisionDate),
+        mileage: input.mileage,
+        description: input.description,
+        servicesPerformed: input.servicesPerformed,
+        workshop: input.workshop || null,
+        cost: input.cost ?? null,
+        nextRevisionDate: input.nextRevisionDate
+          ? new Date(input.nextRevisionDate)
+          : null,
+        nextRevisionMileage: input.nextRevisionMileage ?? null,
+        notes: input.notes || null,
+      },
+    });
+    return serializeRevision(revision);
+  }
+
+  async updateRevision(
+    clubId: string,
+    vehicleId: string,
+    revisionId: string,
+    input: UpdateVehicleRevisionInput,
+  ) {
+    await this.getRevision(clubId, vehicleId, revisionId);
+    const revision = await prisma.vehicleRevision.update({
+      where: { id: revisionId },
+      data: normalizeRevision(input),
+    });
+    return serializeRevision(revision);
+  }
+
+  async removeRevision(clubId: string, vehicleId: string, revisionId: string) {
+    await this.getRevision(clubId, vehicleId, revisionId);
+    await prisma.vehicleRevision.delete({ where: { id: revisionId } });
   }
 }
 

@@ -5,8 +5,10 @@ import {
   BellRing,
   CalendarClock,
   CheckCircle2,
+  Gauge,
   Info,
   ShieldCheck,
+  Wrench,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LoadingState } from "../components/LoadingState";
@@ -23,6 +25,7 @@ const dateFormatter = new Intl.DateTimeFormat("pt-PT", {
   year: "numeric",
   timeZone: "UTC",
 });
+const numberFormatter = new Intl.NumberFormat("pt-PT");
 
 const severityConfig: Record<
   NotificationSeverity,
@@ -57,6 +60,13 @@ const severityConfig: Record<
   },
 };
 
+const typeConfig = {
+  INSPECTION: { label: "Inspeção", icon: CalendarClock },
+  INSURANCE: { label: "Seguro", icon: ShieldCheck },
+  REVISION_DATE: { label: "Revisão por data", icon: Wrench },
+  REVISION_MILEAGE: { label: "Revisão por quilometragem", icon: Gauge },
+};
+
 export function NotificationsPage() {
   const { notifications, loading, error, reload } = useNotifications();
   const counts = {
@@ -70,7 +80,7 @@ export function NotificationsPage() {
       <PageHeader
         eyebrow="Frota"
         title="Notificações"
-        description="Prazos de inspeção e seguro calculados automaticamente."
+        description="Prazos de inspeção, seguro e revisão calculados automaticamente."
       />
 
       {loading ? (
@@ -78,16 +88,35 @@ export function NotificationsPage() {
       ) : error ? (
         <div className="rounded-xl border border-[#efcaca] bg-[#fff0f0] p-4 text-xs text-[#974141]">
           {error}
-          <button className="ml-2 font-bold underline" type="button" onClick={() => void reload()}>
+          <button
+            className="ml-2 font-bold underline"
+            type="button"
+            onClick={() => void reload()}
+          >
             Tentar novamente
           </button>
         </div>
       ) : (
         <>
           <section className="mb-5 grid grid-cols-3 gap-3 max-sm:grid-cols-1">
-            <SummaryCard icon={AlertCircle} label="Urgentes" value={counts.URGENT} tone="red" />
-            <SummaryCard icon={AlertTriangle} label="Avisos" value={counts.WARNING} tone="amber" />
-            <SummaryCard icon={Info} label="Informativas" value={counts.INFO} tone="blue" />
+            <SummaryCard
+              icon={AlertCircle}
+              label="Urgentes"
+              value={counts.URGENT}
+              tone="red"
+            />
+            <SummaryCard
+              icon={AlertTriangle}
+              label="Avisos"
+              value={counts.WARNING}
+              tone="amber"
+            />
+            <SummaryCard
+              icon={Info}
+              label="Informativas"
+              value={counts.INFO}
+              tone="blue"
+            />
           </section>
 
           {notifications.length === 0 ? (
@@ -95,15 +124,20 @@ export function NotificationsPage() {
               <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[#e9f5ed] text-[#287a50]">
                 <CheckCircle2 size={27} />
               </span>
-              <h2 className="mb-2 font-display text-lg text-club-950">Tudo em dia</h2>
+              <h2 className="mb-2 font-display text-lg text-club-950">
+                Tudo em dia
+              </h2>
               <p className="m-0 max-w-sm text-xs leading-5 text-[#718078]">
-                Não existem inspeções ou seguros vencidos ou a terminar nos próximos 30 dias.
+                Não existem inspeções, seguros ou revisões que exijam atenção.
               </p>
             </section>
           ) : (
             <section className="grid gap-3">
               {notifications.map((notification) => (
-                <NotificationCard key={notification.id} notification={notification} />
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                />
               ))}
             </section>
           )}
@@ -114,31 +148,57 @@ export function NotificationsPage() {
 }
 
 function NotificationCard({ notification }: { notification: Notification }) {
-  const config = severityConfig[notification.severity];
-  const Icon = config.icon;
-  const TypeIcon =
-    notification.type === "INSPECTION" ? CalendarClock : ShieldCheck;
+  const severity = severityConfig[notification.severity];
+  const SeverityIcon = severity.icon;
+  const type = typeConfig[notification.type];
+  const TypeIcon = type.icon;
 
   return (
-    <article className={`flex items-start gap-4 rounded-[13px] border p-5 ${config.card} max-sm:flex-wrap`}>
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${config.iconBox}`}>
-        <Icon size={21} />
+    <article
+      className={`flex items-start gap-4 rounded-[13px] border p-5 ${severity.card} max-sm:flex-wrap`}
+    >
+      <span
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${severity.iconBox}`}
+      >
+        <SeverityIcon size={21} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <h2 className="m-0 font-display text-[15px] text-[#28362f]">{notification.title}</h2>
-          <span className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${config.badge}`}>
-            {config.label}
+          <h2 className="m-0 font-display text-[15px] text-[#28362f]">
+            {notification.title}
+          </h2>
+          <span
+            className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${severity.badge}`}
+          >
+            {severity.label}
           </span>
         </div>
-        <p className="mb-3 text-xs leading-5 text-[#5f6d65]">{notification.message}</p>
+        <p className="mb-3 text-xs leading-5 text-[#5f6d65]">
+          {notification.message}
+        </p>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-[#77847c]">
           <span className="inline-flex items-center gap-1.5">
             <TypeIcon size={14} />
-            {notification.type === "INSPECTION" ? "Inspeção" : "Seguro"}
+            {type.label}
           </span>
-          <span>{notification.make} {notification.model}</span>
-          <span>Vencimento: {dateFormatter.format(new Date(`${notification.dueDate}T00:00:00Z`))}</span>
+          <span>
+            {notification.make} {notification.model}
+          </span>
+          {notification.dueDate && (
+            <span>
+              Vencimento:{" "}
+              {dateFormatter.format(
+                new Date(`${notification.dueDate}T00:00:00Z`),
+              )}
+            </span>
+          )}
+          {notification.dueMileage !== null && (
+            <span>
+              Prevista: {numberFormatter.format(notification.dueMileage)} km
+              {notification.currentMileage !== null &&
+                ` · Atual: ${numberFormatter.format(notification.currentMileage)} km`}
+            </span>
+          )}
         </div>
       </div>
       <Link
@@ -169,8 +229,19 @@ function SummaryCard({
   };
   return (
     <article className="flex min-h-24 items-center gap-3 rounded-xl border border-[#dde4de] bg-white p-4">
-      <span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={19} /></span>
-      <div><span className="block text-[10px] uppercase tracking-wide text-[#7c8981]">{label}</span><strong className="mt-1 block font-display text-xl text-club-950">{value}</strong></div>
+      <span
+        className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}
+      >
+        <Icon size={19} />
+      </span>
+      <div>
+        <span className="block text-[10px] uppercase tracking-wide text-[#7c8981]">
+          {label}
+        </span>
+        <strong className="mt-1 block font-display text-xl text-club-950">
+          {value}
+        </strong>
+      </div>
     </article>
   );
 }

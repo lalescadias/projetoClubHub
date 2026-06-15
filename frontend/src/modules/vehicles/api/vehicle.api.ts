@@ -7,6 +7,8 @@ import type {
   VehiclePayload,
   VehicleUsage,
   VehicleUsagePayload,
+  VehicleRevision,
+  VehicleRevisionPayload,
 } from "../types/vehicle";
 
 export const vehicleApi = {
@@ -68,5 +70,44 @@ export const vehicleApi = {
       data: { confirmation },
     });
     return response.data.data;
+  },
+
+  async listRevisions(id: string, page = 1, limit = 20) {
+    const response = await apiClient.get<PaginatedResponse<VehicleRevision>>(
+      `/vehicles/${id}/revisions`,
+      { params: { page, limit } },
+    );
+    return response.data;
+  },
+
+  async getRevision(vehicleId: string, revisionId: string) {
+    const response = await apiClient.get<ApiResponse<VehicleRevision>>(
+      `/vehicles/${vehicleId}/revisions/${revisionId}`,
+    );
+    return response.data.data;
+  },
+
+  async createRevision(vehicleId: string, payload: VehicleRevisionPayload) {
+    const response = await apiClient.post<ApiResponse<VehicleRevision>>(
+      `/vehicles/${vehicleId}/revisions`,
+      payload,
+    );
+    return response.data.data;
+  },
+
+  async updateRevision(
+    vehicleId: string,
+    revisionId: string,
+    payload: Partial<VehicleRevisionPayload>,
+  ) {
+    const response = await apiClient.patch<ApiResponse<VehicleRevision>>(
+      `/vehicles/${vehicleId}/revisions/${revisionId}`,
+      payload,
+    );
+    return response.data.data;
+  },
+
+  async removeRevision(vehicleId: string, revisionId: string) {
+    await apiClient.delete(`/vehicles/${vehicleId}/revisions/${revisionId}`);
   },
 };

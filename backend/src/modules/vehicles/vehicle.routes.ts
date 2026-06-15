@@ -12,6 +12,10 @@ import {
   vehicleUsageBodySchema,
   vehicleUsageListQuerySchema,
   vehicleUsageParamsSchema,
+  updateVehicleRevisionBodySchema,
+  vehicleRevisionBodySchema,
+  vehicleRevisionListQuerySchema,
+  vehicleRevisionParamsSchema,
 } from "./vehicle.schemas.js";
 
 export const vehicleRoutes = Router();
@@ -50,6 +54,43 @@ vehicleRoutes.delete(
     body: deleteVehicleUsageBodySchema,
   }),
   vehicleController.removeUsage,
+);
+vehicleRoutes.get(
+  "/:id/revisions",
+  validate({
+    params: vehicleIdParamsSchema,
+    query: vehicleRevisionListQuerySchema,
+  }),
+  vehicleController.listRevisions,
+);
+vehicleRoutes.get(
+  "/:id/revisions/:revisionId",
+  validate({ params: vehicleRevisionParamsSchema }),
+  vehicleController.getRevision,
+);
+vehicleRoutes.post(
+  "/:id/revisions",
+  authorize(ClubRole.ADMIN),
+  validate({
+    params: vehicleIdParamsSchema,
+    body: vehicleRevisionBodySchema,
+  }),
+  vehicleController.createRevision,
+);
+vehicleRoutes.patch(
+  "/:id/revisions/:revisionId",
+  authorize(ClubRole.ADMIN),
+  validate({
+    params: vehicleRevisionParamsSchema,
+    body: updateVehicleRevisionBodySchema,
+  }),
+  vehicleController.updateRevision,
+);
+vehicleRoutes.delete(
+  "/:id/revisions/:revisionId",
+  authorize(ClubRole.ADMIN),
+  validate({ params: vehicleRevisionParamsSchema }),
+  vehicleController.removeRevision,
 );
 vehicleRoutes.get(
   "/:id",
