@@ -60,6 +60,12 @@ model User {
   isActive     Boolean      @default(true)
   memberships  Membership[]
   dismissedNotifications NotificationDismissal[]
+  vehiclesCreated         Vehicle[]              @relation("VehicleCreatedBy")
+  vehiclesUpdated         Vehicle[]              @relation("VehicleUpdatedBy")
+  usagesCreated           VehicleUsage[]         @relation("VehicleUsageCreatedBy")
+  usagesUpdated           VehicleUsage[]         @relation("VehicleUsageUpdatedBy")
+  revisionsCreated        VehicleRevision[]      @relation("VehicleRevisionCreatedBy")
+  revisionsUpdated        VehicleRevision[]      @relation("VehicleRevisionUpdatedBy")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -107,6 +113,10 @@ model Vehicle {
   notes           String?       @db.Text
   clubId          String
   club            Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdById     String?
+  createdBy       User?         @relation("VehicleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById     String?
+  updatedBy       User?         @relation("VehicleUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   usages          VehicleUsage[]
   revisions       VehicleRevision[]
   createdAt       DateTime      @default(now())
@@ -115,6 +125,7 @@ model Vehicle {
   @@unique([clubId, plate])
   @@index([clubId, status])
   @@index([clubId, make, model])
+  @@index([createdById])
 }
 
 model VehicleRevision {
@@ -130,10 +141,15 @@ model VehicleRevision {
   nextRevisionDate        DateTime? @db.Date
   nextRevisionMileage     Int?
   notes                   String?  @db.Text
+  createdById             String?
+  createdBy               User?    @relation("VehicleRevisionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById             String?
+  updatedBy               User?    @relation("VehicleRevisionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
   @@index([vehicleId, revisionDate])
+  @@index([createdById])
 }
 
 model VehicleUsage {
@@ -148,7 +164,13 @@ model VehicleUsage {
   fuelAmount     Decimal? @db.Decimal(10, 2)
   fuelCost       Decimal? @db.Decimal(10, 2)
   notes          String?  @db.Text
+  createdById    String?
+  createdBy      User?    @relation("VehicleUsageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById    String?
+  updatedBy      User?    @relation("VehicleUsageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([vehicleId, usageDate])
+  @@index([createdById])
 }

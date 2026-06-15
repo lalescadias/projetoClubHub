@@ -214,6 +214,7 @@ Base URL: `http://localhost:3333/api`
 | `DELETE` | `/vehicles/:id` | Remove uma viatura |
 | `GET` | `/vehicles/:id/usages` | Histórico paginado de utilizações |
 | `POST` | `/vehicles/:id/usages` | Regista utilização e atualiza quilometragem |
+| `PATCH` | `/vehicles/:id/usages/:usageId` | Edita apenas a utilização mais recente |
 | `DELETE` | `/vehicles/:id/usages/:usageId` | Apaga a última utilização e repõe quilometragem |
 | `GET` | `/vehicles/:id/revisions` | Histórico paginado de revisões |
 | `GET` | `/vehicles/:id/revisions/:revisionId` | Detalhe de uma revisão |
@@ -271,6 +272,14 @@ existência permanente de pelo menos um `SUPER_ADMIN`.
 Os clubes podem ser criados, editados e removidos por qualquer `SUPER_ADMIN`.
 A remoção exige `{ "confirmation": "delete" }`, elimina os dados associados em
 cascata e o sistema impede que seja apagado o último clube existente.
+
+As viaturas, utilizações e revisões guardam o utilizador que criou o registo e
+quem realizou a última alteração. Registos anteriores a esta funcionalidade
+podem não apresentar autor até serem novamente editados.
+
+Apenas a utilização mais recente de cada viatura pode ser editada ou apagada.
+Ao editar, a quilometragem inicial permanece fixa e a quilometragem final
+atualiza automaticamente a quilometragem atual da viatura.
 
 Parâmetros de `GET /vehicles`:
 

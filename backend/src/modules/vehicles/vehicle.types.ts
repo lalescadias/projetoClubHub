@@ -42,6 +42,8 @@ export type CreateVehicleUsageInput = {
   notes?: string | null;
 };
 
+export type UpdateVehicleUsageInput = CreateVehicleUsageInput;
+
 export type VehicleUsageFilters = {
   page: number;
   limit: number;

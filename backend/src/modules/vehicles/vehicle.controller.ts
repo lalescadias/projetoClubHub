@@ -7,6 +7,7 @@ import type {
   VehicleFilters,
   VehicleUsageFilters,
   UpdateVehicleRevisionInput,
+  UpdateVehicleUsageInput,
   VehicleRevisionFilters,
 } from "./vehicle.types.js";
 import { vehicleService } from "./vehicle.service.js";
@@ -31,6 +32,7 @@ export class VehicleController {
   create: RequestHandler = async (request, response) => {
     const vehicle = await vehicleService.create(
       request.auth!.clubId!,
+      request.auth!.userId,
       request.body as CreateVehicleInput,
     );
     response.status(201).json({ data: vehicle });
@@ -40,6 +42,7 @@ export class VehicleController {
     const vehicle = await vehicleService.update(
       request.auth!.clubId!,
       request.params.id as string,
+      request.auth!.userId,
       request.body as UpdateVehicleInput,
     );
     response.json({ data: vehicle });
@@ -68,9 +71,21 @@ export class VehicleController {
     const result = await vehicleService.createUsage(
       request.auth!.clubId!,
       request.params.id as string,
+      request.auth!.userId,
       request.body as CreateVehicleUsageInput,
     );
     response.status(201).json({ data: result });
+  };
+
+  updateUsage: RequestHandler = async (request, response) => {
+    const result = await vehicleService.updateUsage(
+      request.auth!.clubId!,
+      request.params.id as string,
+      request.params.usageId as string,
+      request.auth!.userId,
+      request.body as UpdateVehicleUsageInput,
+    );
+    response.json({ data: result });
   };
 
   removeUsage: RequestHandler = async (request, response) => {
@@ -78,6 +93,7 @@ export class VehicleController {
       request.auth!.clubId!,
       request.params.id as string,
       request.params.usageId as string,
+      request.auth!.userId,
     );
     response.json({ data: result });
   };
@@ -104,6 +120,7 @@ export class VehicleController {
     const revision = await vehicleService.createRevision(
       request.auth!.clubId!,
       request.params.id as string,
+      request.auth!.userId,
       request.body as CreateVehicleRevisionInput,
     );
     response.status(201).json({ data: revision });
@@ -114,6 +131,7 @@ export class VehicleController {
       request.auth!.clubId!,
       request.params.id as string,
       request.params.revisionId as string,
+      request.auth!.userId,
       request.body as UpdateVehicleRevisionInput,
     );
     response.json({ data: revision });

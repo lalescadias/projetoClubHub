@@ -28,6 +28,7 @@ import {
   vehicleTypeLabels,
 } from "../modules/vehicles/constants/vehicle-options";
 import type {
+  AuditUser,
   Vehicle,
   VehicleRevision,
   VehicleRevisionPayload,
@@ -51,7 +52,8 @@ export function VehicleDetailsPage() {
   const [revisions, setRevisions] = useState<VehicleRevision[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showUsageForm, setShowUsageForm] = useState(false);
+  const [usageForm, setUsageForm] =
+    useState<VehicleUsage | null | undefined>(undefined);
   const [revisionForm, setRevisionForm] =
     useState<VehicleRevision | null | undefined>(undefined);
   const [revisionDetails, setRevisionDetails] =
@@ -99,9 +101,13 @@ export function VehicleDetailsPage() {
       .join(" · ");
   }, [revisions]);
 
-  const createUsage = async (payload: VehicleUsagePayload) => {
+  const saveUsage = async (payload: VehicleUsagePayload) => {
     if (!id) return;
-    await vehicleApi.createUsage(id, payload);
+    if (usageForm) {
+      await vehicleApi.updateUsage(id, usageForm.id, payload);
+    } else {
+      await vehicleApi.createUsage(id, payload);
+    }
     refreshNotifications();
     await load();
   };
@@ -175,7 +181,7 @@ export function VehicleDetailsPage() {
                 <button
                   className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-club-800 px-4 text-xs font-bold text-white"
                   type="button"
-                  onClick={() => setShowUsageForm(true)}
+                  onClick={() => setUsageForm(null)}
                 >
                   <Plus size={17} /> Registar utilização
                 </button>
@@ -184,6 +190,14 @@ export function VehicleDetailsPage() {
           ) : undefined
         }
       />
+      {(vehicle.createdBy || vehicle.updatedBy) && (
+        <div className="mb-4 rounded-lg border border-[#e1e7e2] bg-white px-4 py-3">
+          <AuditLine
+            createdBy={vehicle.createdBy}
+            updatedBy={vehicle.updatedBy}
+          />
+        </div>
+      )}
 
       <section className="mb-5 grid grid-cols-4 gap-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
         <DetailCard
@@ -260,6 +274,10 @@ export function VehicleDetailsPage() {
                   <span className="mt-1 block truncate text-[11px] text-[#7c8981]">
                     {revision.workshop || "Oficina não indicada"}
                   </span>
+                  <AuditLine
+                    createdBy={revision.createdBy}
+                    updatedBy={revision.updatedBy}
+                  />
                 </div>
                 <ListValue
                   label="Quilometragem"
@@ -365,15 +383,27 @@ export function VehicleDetailsPage() {
                       : undefined
                   }
                 />
-                {canManage && usage.id === usages[0]?.id && (
-                  <IconButton
-                    danger
-                    label="Apagar utilização"
-                    onClick={() => setUsageToDelete(usage)}
-                  >
-                    <Trash2 size={16} />
-                  </IconButton>
+                {canManage && usage.isLatest && (
+                  <div className="flex gap-2">
+                    <IconButton
+                      label="Editar utilização"
+                      onClick={() => setUsageForm(usage)}
+                    >
+                      <Pencil size={16} />
+                    </IconButton>
+                    <IconButton
+                      danger
+                      label="Apagar utilização"
+                      onClick={() => setUsageToDelete(usage)}
+                    >
+                      <Trash2 size={16} />
+                    </IconButton>
+                  </div>
                 )}
+                <AuditLine
+                  createdBy={usage.createdBy}
+                  updatedBy={usage.updatedBy}
+                />
                 {usage.notes && (
                   <p className="col-span-full m-0 rounded-lg bg-[#f7f9f7] p-3 text-xs text-[#657269]">
                     {usage.notes}
@@ -385,11 +415,12 @@ export function VehicleDetailsPage() {
         )}
       </HistorySection>
 
-      {showUsageForm && (
+      {usageForm !== undefined && (
         <VehicleUsageFormModal
           vehicle={vehicle}
-          onClose={() => setShowUsageForm(false)}
-          onSubmit={createUsage}
+          usage={usageForm}
+          onClose={() => setUsageForm(undefined)}
+          onSubmit={saveUsage}
         />
       )}
       {revisionForm !== undefined && (
@@ -414,6 +445,22 @@ export function VehicleDetailsPage() {
         />
       )}
     </>
+  );
+}
+
+function AuditLine({
+  createdBy,
+  updatedBy,
+}: {
+  createdBy: AuditUser | null;
+  updatedBy: AuditUser | null;
+}) {
+  if (!createdBy && !updatedBy) return null;
+  return (
+    <span className="col-span-full mt-1 block text-[10px] text-[#8a958e]">
+      Criado por {createdBy?.name ?? "utilizador removido"}
+      {updatedBy && ` · Alterado por ${updatedBy.name}`}
+    </span>
   );
 }
 

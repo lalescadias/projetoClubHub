@@ -4,7 +4,15 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { getErrorMessage } from "../../../services/error.service";
-import type { Vehicle, VehicleUsagePayload } from "../types/vehicle";
+import type {
+  Vehicle,
+  VehicleUsage,
+  VehicleUsagePayload,
+} from "../types/vehicle";
+
+function dateValue(value?: string) {
+  return value ? value.slice(0, 10) : new Date().toISOString().slice(0, 10);
+}
 
 const schema = z
   .object({
@@ -26,14 +34,17 @@ type FormValues = z.infer<typeof schema>;
 
 export function VehicleUsageFormModal({
   vehicle,
+  usage,
   onClose,
   onSubmit,
 }: {
   vehicle: Vehicle;
+  usage?: VehicleUsage | null;
   onClose: () => void;
   onSubmit: (payload: VehicleUsagePayload) => Promise<void>;
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const editing = Boolean(usage);
   const {
     register,
     handleSubmit,
@@ -41,12 +52,14 @@ export function VehicleUsageFormModal({
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      usedBy: "",
-      destination: "",
-      usageDate: new Date().toISOString().slice(0, 10),
-      startMileage: vehicle.currentMileage,
-      endMileage: vehicle.currentMileage,
-      notes: "",
+      usedBy: usage?.usedBy ?? "",
+      destination: usage?.destination ?? "",
+      usageDate: dateValue(usage?.usageDate),
+      startMileage: usage?.startMileage ?? vehicle.currentMileage,
+      endMileage: usage?.endMileage ?? vehicle.currentMileage,
+      fuelAmount: usage?.fuelAmount ?? undefined,
+      fuelCost: usage?.fuelCost ?? undefined,
+      notes: usage?.notes ?? "",
     },
   });
 
@@ -89,7 +102,7 @@ export function VehicleUsageFormModal({
               {vehicle.plate}
             </span>
             <h2 className="mt-1 font-display text-xl text-club-950" id="usage-form-title">
-              Registar utilização
+              {editing ? "Editar utilização" : "Registar utilização"}
             </h2>
           </div>
           <button className="grid h-9 w-9 place-items-center rounded-lg border border-[#dde4de]" type="button" onClick={onClose}>
@@ -102,7 +115,9 @@ export function VehicleUsageFormModal({
           <div>
             <span className="block text-[10px] uppercase tracking-wide">Quilometragem atual</span>
             <strong className="font-display text-lg">
-              {new Intl.NumberFormat("pt-PT").format(vehicle.currentMileage)} km
+              {new Intl.NumberFormat("pt-PT").format(
+                usage?.startMileage ?? vehicle.currentMileage,
+              )} km
             </strong>
           </div>
         </div>
@@ -177,7 +192,11 @@ export function VehicleUsageFormModal({
               Cancelar
             </button>
             <button className="h-10 rounded-lg bg-club-800 px-4 text-xs font-bold text-white" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "A registar..." : "Registar utilização"}
+              {isSubmitting
+                ? "A guardar..."
+                : editing
+                  ? "Guardar alterações"
+                  : "Registar utilização"}
             </button>
           </footer>
         </form>

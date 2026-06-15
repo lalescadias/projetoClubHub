@@ -63,6 +63,17 @@ export const vehicleApi = {
     return response.data.data;
   },
 
+  async updateUsage(
+    vehicleId: string,
+    usageId: string,
+    payload: VehicleUsagePayload,
+  ) {
+    const response = await apiClient.patch<
+      ApiResponse<{ usage: VehicleUsage; currentMileage: number }>
+    >(`/vehicles/${vehicleId}/usages/${usageId}`, payload);
+    return response.data.data;
+  },
+
   async removeUsage(vehicleId: string, usageId: string, confirmation: string) {
     const response = await apiClient.delete<
       ApiResponse<{ currentMileage: number }>

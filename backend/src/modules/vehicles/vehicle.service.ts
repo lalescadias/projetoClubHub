@@ -9,8 +9,20 @@ import type {
   VehicleFilters,
   VehicleUsageFilters,
   UpdateVehicleRevisionInput,
+  UpdateVehicleUsageInput,
   VehicleRevisionFilters,
 } from "./vehicle.types.js";
+
+const auditUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+} as const;
+
+const auditInclude = {
+  createdBy: { select: auditUserSelect },
+  updatedBy: { select: auditUserSelect },
+} as const;
 
 function normalizeDates<T extends CreateVehicleInput | UpdateVehicleInput>(data: T) {
   return {
@@ -81,6 +93,7 @@ export class VehicleService {
     const [items, total] = await prisma.$transaction([
       prisma.vehicle.findMany({
         where,
+        include: auditInclude,
         orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
@@ -100,7 +113,10 @@ export class VehicleService {
   }
 
   async getById(clubId: string, id: string) {
-    const vehicle = await prisma.vehicle.findFirst({ where: { id, clubId } });
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, clubId },
+      include: auditInclude,
+    });
 
     if (!vehicle) {
       throw new AppError("Viatura não encontrada.", 404);
@@ -109,18 +125,29 @@ export class VehicleService {
     return vehicle;
   }
 
-  async create(clubId: string, input: CreateVehicleInput) {
+  async create(clubId: string, actorUserId: string, input: CreateVehicleInput) {
     return prisma.vehicle.create({
-      data: { ...normalizeDates(input), clubId },
+      data: {
+        ...normalizeDates(input),
+        clubId,
+        createdById: actorUserId,
+      },
+      include: auditInclude,
     });
   }
 
-  async update(clubId: string, id: string, input: UpdateVehicleInput) {
+  async update(
+    clubId: string,
+    id: string,
+    actorUserId: string,
+    input: UpdateVehicleInput,
+  ) {
     await this.getById(clubId, id);
 
     return prisma.vehicle.update({
       where: { id },
-      data: normalizeDates(input),
+      data: { ...normalizeDates(input), updatedById: actorUserId },
+      include: auditInclude,
     });
   }
 
@@ -151,7 +178,8 @@ export class VehicleService {
     const [items, total] = await prisma.$transaction([
       prisma.vehicleUsage.findMany({
         where: { vehicleId, vehicle: { clubId } },
-        orderBy: [{ usageDate: "desc" }, { createdAt: "desc" }],
+        include: auditInclude,
+        orderBy: [{ createdAt: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -161,7 +189,10 @@ export class VehicleService {
     ]);
 
     return {
-      data: items.map(serializeUsage),
+      data: items.map((usage, index) => ({
+        ...serializeUsage(usage),
+        isLatest: page === 1 && index === 0,
+      })),
       meta: {
         page,
         limit,
@@ -174,6 +205,7 @@ export class VehicleService {
   async createUsage(
     clubId: string,
     vehicleId: string,
+    actorUserId: string,
     input: CreateVehicleUsageInput,
   ) {
     return prisma.$transaction(async (transaction) => {
@@ -213,7 +245,10 @@ export class VehicleService {
           currentMileage: input.startMileage,
           status: { not: "UNAVAILABLE" },
         },
-        data: { currentMileage: input.endMileage },
+        data: {
+          currentMileage: input.endMileage,
+          updatedById: actorUserId,
+        },
       });
 
       if (updated.count !== 1) {
@@ -234,17 +269,97 @@ export class VehicleService {
           fuelAmount: input.fuelAmount ?? null,
           fuelCost: input.fuelCost ?? null,
           notes: input.notes || null,
+          createdById: actorUserId,
         },
+        include: auditInclude,
       });
 
       return {
-        usage: serializeUsage(usage),
+        usage: { ...serializeUsage(usage), isLatest: true },
         currentMileage: input.endMileage,
       };
     });
   }
 
-  async removeUsage(clubId: string, vehicleId: string, usageId: string) {
+  async updateUsage(
+    clubId: string,
+    vehicleId: string,
+    usageId: string,
+    actorUserId: string,
+    input: UpdateVehicleUsageInput,
+  ) {
+    return prisma.$transaction(async (transaction) => {
+      const usage = await transaction.vehicleUsage.findFirst({
+        where: { id: usageId, vehicleId, vehicle: { clubId } },
+      });
+      if (!usage) {
+        throw new AppError("Utilização não encontrada.", 404);
+      }
+
+      const latestUsage = await transaction.vehicleUsage.findFirst({
+        where: { vehicleId, vehicle: { clubId } },
+        orderBy: [{ createdAt: "desc" }],
+        select: { id: true },
+      });
+      if (latestUsage?.id !== usage.id) {
+        throw new AppError(
+          "Só é possível editar a utilização mais recente da viatura.",
+          422,
+        );
+      }
+      if (input.startMileage !== usage.startMileage) {
+        throw new AppError(
+          `A quilometragem inicial deve permanecer em ${usage.startMileage} km.`,
+          422,
+        );
+      }
+
+      const updatedVehicle = await transaction.vehicle.updateMany({
+        where: {
+          id: vehicleId,
+          clubId,
+          currentMileage: usage.endMileage,
+        },
+        data: {
+          currentMileage: input.endMileage,
+          updatedById: actorUserId,
+        },
+      });
+      if (updatedVehicle.count !== 1) {
+        throw new AppError(
+          "A quilometragem atual já não corresponde a esta utilização.",
+          409,
+        );
+      }
+
+      const updatedUsage = await transaction.vehicleUsage.update({
+        where: { id: usage.id },
+        data: {
+          usedBy: input.usedBy,
+          destination: input.destination,
+          usageDate: new Date(input.usageDate),
+          endMileage: input.endMileage,
+          fuelAmount: input.fuelAmount ?? null,
+          fuelCost: input.fuelCost ?? null,
+          notes: input.notes || null,
+          updatedById: actorUserId,
+        },
+        include: auditInclude,
+      });
+
+      return {
+        usage: { ...serializeUsage(updatedUsage), isLatest: true },
+        currentMileage: input.endMileage,
+      };
+    });
+  }
+
+  async removeUsage(
+    clubId: string,
+    vehicleId: string,
+    usageId: string,
+    actorUserId: string,
+  ) {
     return prisma.$transaction(async (transaction) => {
       const usage = await transaction.vehicleUsage.findFirst({
         where: { id: usageId, vehicleId, vehicle: { clubId } },
@@ -256,7 +371,7 @@ export class VehicleService {
 
       const latestUsage = await transaction.vehicleUsage.findFirst({
         where: { vehicleId, vehicle: { clubId } },
-        orderBy: [{ usageDate: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ createdAt: "desc" }],
         select: { id: true },
       });
 
@@ -273,7 +388,10 @@ export class VehicleService {
           clubId,
           currentMileage: usage.endMileage,
         },
-        data: { currentMileage: usage.startMileage },
+        data: {
+          currentMileage: usage.startMileage,
+          updatedById: actorUserId,
+        },
       });
 
       if (restored.count !== 1) {
@@ -300,6 +418,7 @@ export class VehicleService {
     const [items, total] = await prisma.$transaction([
       prisma.vehicleRevision.findMany({
         where: { vehicleId, vehicle: { clubId } },
+        include: auditInclude,
         orderBy: [{ revisionDate: "desc" }, { createdAt: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
@@ -323,6 +442,7 @@ export class VehicleService {
   async getRevision(clubId: string, vehicleId: string, revisionId: string) {
     const revision = await prisma.vehicleRevision.findFirst({
       where: { id: revisionId, vehicleId, vehicle: { clubId } },
+      include: auditInclude,
     });
     if (!revision) throw new AppError("Revisão não encontrada.", 404);
     return serializeRevision(revision);
@@ -331,6 +451,7 @@ export class VehicleService {
   async createRevision(
     clubId: string,
     vehicleId: string,
+    actorUserId: string,
     input: CreateVehicleRevisionInput,
   ) {
     await this.getById(clubId, vehicleId);
@@ -348,7 +469,9 @@ export class VehicleService {
           : null,
         nextRevisionMileage: input.nextRevisionMileage ?? null,
         notes: input.notes || null,
+        createdById: actorUserId,
       },
+      include: auditInclude,
     });
     return serializeRevision(revision);
   }
@@ -357,12 +480,14 @@ export class VehicleService {
     clubId: string,
     vehicleId: string,
     revisionId: string,
+    actorUserId: string,
     input: UpdateVehicleRevisionInput,
   ) {
     await this.getRevision(clubId, vehicleId, revisionId);
     const revision = await prisma.vehicleRevision.update({
       where: { id: revisionId },
-      data: normalizeRevision(input),
+      data: { ...normalizeRevision(input), updatedById: actorUserId },
+      include: auditInclude,
     });
     return serializeRevision(revision);
   }

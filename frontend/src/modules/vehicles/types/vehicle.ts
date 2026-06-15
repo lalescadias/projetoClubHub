@@ -13,6 +13,12 @@ export type VehicleType = (typeof vehicleTypes)[number];
 export type VehicleStatus = (typeof vehicleStatuses)[number];
 export type FuelType = (typeof fuelTypes)[number];
 
+export type AuditUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export type Vehicle = {
   id: string;
   plate: string;
@@ -29,6 +35,8 @@ export type Vehicle = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  createdBy: AuditUser | null;
+  updatedBy: AuditUser | null;
 };
 
 export type VehiclePayload = {
@@ -58,6 +66,10 @@ export type VehicleUsage = {
   fuelCost: number | null;
   notes: string | null;
   createdAt: string;
+  updatedAt: string;
+  isLatest: boolean;
+  createdBy: AuditUser | null;
+  updatedBy: AuditUser | null;
 };
 
 export type VehicleUsagePayload = {
@@ -85,6 +97,8 @@ export type VehicleRevision = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  createdBy: AuditUser | null;
+  updatedBy: AuditUser | null;
 };
 
 export type VehicleRevisionPayload = {

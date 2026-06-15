@@ -5,6 +5,7 @@ import { validate } from "../../middlewares/validate.js";
 import { vehicleController } from "./vehicle.controller.js";
 import {
   deleteVehicleUsageBodySchema,
+  updateVehicleUsageBodySchema,
   updateVehicleBodySchema,
   vehicleBodySchema,
   vehicleIdParamsSchema,
@@ -54,6 +55,15 @@ vehicleRoutes.delete(
     body: deleteVehicleUsageBodySchema,
   }),
   vehicleController.removeUsage,
+);
+vehicleRoutes.patch(
+  "/:id/usages/:usageId",
+  authorize(UserRole.SUPER_ADMIN, ClubRole.ADMIN),
+  validate({
+    params: vehicleUsageParamsSchema,
+    body: updateVehicleUsageBodySchema,
+  }),
+  vehicleController.updateUsage,
 );
 vehicleRoutes.get(
   "/:id/revisions",
