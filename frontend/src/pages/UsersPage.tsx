@@ -151,7 +151,11 @@ export function UsersPage() {
                   activeSuperAdminCount <= 1;
                 const roleOptions = isSuperAdmin
                   ? Object.entries(roleLabels)
-                  : [["MEMBER", roleLabels.MEMBER]];
+                  : target.role === "SUPER_ADMIN"
+                    ? [["SUPER_ADMIN", roleLabels.SUPER_ADMIN]]
+                    : Object.entries(roleLabels).filter(
+                        ([role]) => role !== "SUPER_ADMIN",
+                      );
 
                 return (
                   <article
@@ -183,7 +187,7 @@ export function UsersPage() {
                     <select
                       className="h-10 rounded-lg border border-[#d9e0da] bg-white px-3 text-xs disabled:bg-[#f4f6f4] disabled:text-[#8b958f] max-lg:order-4 max-lg:flex-1"
                       value={target.role}
-                      disabled={!isSuperAdmin || lastSuperAdmin}
+                      disabled={!canManageTarget || lastSuperAdmin}
                       onChange={(event) =>
                         void updateAccess(target, {
                           role: event.target.value as ClubRole,
