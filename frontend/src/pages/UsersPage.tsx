@@ -145,6 +145,7 @@ export function UsersPage() {
                 const protectedRole =
                   target.role === "SUPER_ADMIN" || target.role === "ADMIN";
                 const canManageTarget = isSuperAdmin || !protectedRole;
+                const canEditIdentity = canManageTarget || isCurrentUser;
                 const lastSuperAdmin =
                   target.role === "SUPER_ADMIN" &&
                   target.isActive &&
@@ -227,7 +228,7 @@ export function UsersPage() {
                       <button
                         className="grid h-10 w-10 place-items-center rounded-lg border border-[#d9e0da] text-club-700 hover:bg-club-100 disabled:cursor-not-allowed disabled:opacity-35"
                         type="button"
-                        disabled={!canManageTarget}
+                        disabled={!canEditIdentity}
                         onClick={() => setUserToEdit(target)}
                         aria-label="Editar utilizador"
                         title="Editar utilizador"

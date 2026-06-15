@@ -162,14 +162,21 @@ export class UserService {
     });
     if (!membership) throw new AppError("Utilizador não encontrado.", 404);
 
-    if (membership.role === ClubRole.ADMIN && actorRole !== UserRole.SUPER_ADMIN) {
+    const isCurrentUser = membership.userId === actorUserId;
+    if (
+      membership.role === ClubRole.ADMIN &&
+      actorRole !== UserRole.SUPER_ADMIN &&
+      (!isCurrentUser ||
+        input.role !== undefined ||
+        input.isActive !== undefined)
+    ) {
       throw new AppError(
-        "Apenas um superadministrador pode gerir administradores.",
+        "Um administrador só pode alterar o seu próprio nome e email.",
         403,
       );
     }
     if (input.role) this.assertCanAssignRole(actorRole, input.role);
-    if (membership.userId === actorUserId && input.isActive === false) {
+    if (isCurrentUser && input.isActive === false) {
       throw new AppError("Não pode desativar a sua própria conta.", 422);
     }
 
@@ -191,7 +198,19 @@ export class UserService {
       });
     }
 
-    await this.validateIdentityUpdate(membership.userId, membership.user.email, input);
+    if (isCurrentUser) {
+      await this.validateEmail(
+        membership.userId,
+        membership.user.email,
+        input.email,
+      );
+    } else {
+      await this.validateIdentityUpdate(
+        membership.userId,
+        membership.user.email,
+        input,
+      );
+    }
     return prisma.$transaction(async (transaction) => {
       if (input.name !== undefined || input.email !== undefined) {
         await transaction.user.update({
